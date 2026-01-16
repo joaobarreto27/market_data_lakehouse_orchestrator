@@ -2,28 +2,65 @@
 name = "market-data-lakehouse-orchestrator"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "joaobarreto27",email = "joao.vito1951@gmail.com"}
-]
 readme = "README.md"
-requires-python = ">=3.12, <3.13"
-dependencies = [
-    "pip-audit (>=2.10.0,<3.0.0)",
-    "taskipy (>=1.14.1,<2.0.0)",
-    "pre-commit (>=4.5.1,<5.0.0)",
-    "python-dotenv (>=1.2.1,<2.0.0)",
-    "ruff (>=0.14.13,<0.15.0)",
-    "requests (>=2.32.5,<3.0.0)",
-    "types-requests (>=2.32.4.20260107,<3.0.0.0)",
-    "pyspark (>=4.1.1,<5.0.0)",
-    "pydantic (>=2.12.5,<3.0.0)",
-    "pandera (>=0.28.1,<0.29.0)",
-    "pandas (>=2.3.3,<3.0.0)",
-    "pandas-stubs (>=2.3.3.260113,<3.0.0.0)",
-    "mypy (>=1.19.1,<2.0.0)"
+requires-python = ">=3.12,<3.13"
+
+authors = [
+  { name = "joaobarreto27", email = "joao.vito1951@gmail.com" }
 ]
 
+dependencies = [
+  "requests>=2.32.5,<3.0.0",
+  "pyspark>=4.1.1,<5.0.0",
+  "pydantic>=2.12.5,<3.0.0",
+  "pandera>=0.28.1,<0.29.0",
+  "pandas>=2.3.3,<3.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff>=0.14.13,<0.15.0",
+  "mypy>=1.19.1,<2.0.0",
+  "taskipy>=1.14.1,<2.0.0",
+  "pre-commit>=4.5.1,<5.0.0",
+  "pip-audit>=2.10.0,<3.0.0",
+  "types-requests>=2.32.4.20260107,<3.0.0.0",
+  "pandas-stubs>=2.3.3.260113,<3.0.0.0",
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["worker*", "infrastructure*"]
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "I", "D"]
+ignore = ["D203", "D213"]
+fix = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+files = ["src"]
+mypy_path = ["src"]
+explicit_package_bases = true
+
+[tool.taskipy.tasks]
+format = "ruff format ."
+check = "ruff check ."
+check_fix = "ruff check . --fix"
+test = "pytest -v"
+test_commit = "pre-commit run --all-files"
 
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
