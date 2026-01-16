@@ -1,0 +1,6 @@
+extends: default
+rules:
+  title-max-length: [2, "always", 70]
+  body-max-line-length: [2, "always", 72]
+  body-leading-blank: [2, "always"]
+  type-case: [2, "always", "lowercase"]
