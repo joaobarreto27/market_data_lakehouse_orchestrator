@@ -58,8 +58,16 @@ explicit_package_bases = true
 format = "ruff format ."
 check = "ruff check ."
 check_fix = "ruff check . --fix"
-test = "pytest -v"
+format_check = "ruff format . --check"
 test_commit = "pre-commit run --all-files"
+typecheck = "mypy src"
+security = "bandit -r src -x tests -s B101"
+ci = """
+ruff check .
+ruff format . --check
+mypy src
+bandit -r src -x tests -s B101
+"""
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
