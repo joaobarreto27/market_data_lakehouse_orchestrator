@@ -50,20 +50,24 @@ jobs:
 
       # 6️⃣ Ruff lint
       - name: Ruff lint
-        run: |
-          ruff check .
+        run: ruff check .
 
       # 7️⃣ Ruff format (check only)
       - name: Ruff format check
-        run: |
-          ruff format . --check
+        run: ruff format . --check
 
       # 8️⃣ Mypy
-      - name: Mypy
-        run: |
-          mypy src
+      - name: Mypy type checking
+        run: mypy src
 
       # 9️⃣ Bandit
       - name: Bandit security scan
-        run: |
-          bandit -r src -x tests -s B101
+        run: bandit -r src -x tests -s B101
+
+      # 🔟 Pytest
+      - name: Pytest
+        run: pytest tests/ -v --cov=src --cov-report=term-missing
+
+      # 1️⃣1️⃣ pip-audit
+      - name: Pip-audit security check
+        run: pip-audit
