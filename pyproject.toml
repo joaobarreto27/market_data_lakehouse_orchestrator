@@ -71,6 +71,7 @@ ruff format . --check
 mypy src
 bandit -r src -x tests -s B101
 pip-audit
+pre-commit run --all-files
 """
 
 [build-system]
