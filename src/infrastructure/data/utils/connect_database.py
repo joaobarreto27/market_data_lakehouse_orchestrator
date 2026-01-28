@@ -8,8 +8,10 @@ from typing import Dict, Optional, Tuple
 from dotenv import dotenv_values
 from pyspark.sql import SparkSession
 
+from ..repository import DatabaseRepository
 
-class ConnectionDatabase:
+
+class ConnectionDatabase(DatabaseRepository):
     """Manages JDBC connection with PostgreSQL via PySpark."""
 
     def __init__(
