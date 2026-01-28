@@ -4,8 +4,10 @@ from typing import Any
 
 import requests
 
+from ..repository import ApiRepository
 
-class ConnectAPI:
+
+class ConnectAPI(ApiRepository):
     """Manages connection the API with support for multiple authentication methods."""
 
     def __init__(self, url: str) -> None:
@@ -18,7 +20,7 @@ class ConnectAPI:
         self.url: str = url
         self.data_json: dict[str, Any] = {}
 
-    def connect_api(
+    def connect(
         self,
         auth: tuple[str, str] | None = None,
         token: str | None = None,

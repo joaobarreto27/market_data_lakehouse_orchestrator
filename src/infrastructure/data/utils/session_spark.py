@@ -11,7 +11,7 @@ class SparkSessionManager:
     _instance: Optional["SparkSessionManager"] = None
     _spark: Optional[SparkSession] = None
 
-    def __new__(cls, *args: Any, **kwargs: Any) -> "SparkSessionManager":
+    def __new__(cls, *args: Any) -> "SparkSessionManager":
         """Ensure only one instance exists (singleton pattern).
 
         Returns:
