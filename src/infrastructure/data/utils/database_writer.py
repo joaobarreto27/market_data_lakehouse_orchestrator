@@ -5,10 +5,11 @@ from typing import Literal
 import pandas as pd
 from pyspark.sql import DataFrame, SparkSession
 
+from ..repository import WriterRepository
 from .connect_database import ConnectionDatabase
 
 
-class DatabaseWriter:
+class DatabaseWriter(WriterRepository):
     """Manages data loading into databases with Spark."""
 
     def __init__(self, spark: SparkSession, connect: ConnectionDatabase) -> None:
@@ -21,7 +22,7 @@ class DatabaseWriter:
         self.spark = spark
         self.connect = connect
 
-    def save_data(self, df: DataFrame, table_name: str, mode: str = "append") -> None:
+    def write(self, df: DataFrame, table_name: str, mode: str = "append") -> None:
         """Save a PySpark DataFrame to the database.
 
         Args:
