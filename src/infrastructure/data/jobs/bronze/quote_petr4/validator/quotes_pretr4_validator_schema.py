@@ -15,7 +15,7 @@ class QuotesPetr4ValidatorSchema(BaseModel):
     regularMarketPrice: PositiveFloat
     regularMarketDayHigh: PositiveFloat
     regularMarketDayLow: PositiveFloat
-    regularMarketDayRange: PositiveFloat
+    regularMarketDayRange: str
     regularMarketChange: float
     regularMarketChangePercent: float
     regularMarketTime: datetime
