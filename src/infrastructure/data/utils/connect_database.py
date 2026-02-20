@@ -16,10 +16,10 @@ class ConnectionDatabase(DatabaseRepository):
 
     def __init__(
         self,
-        sgbd_name: str,
         environment: str,
         db_name: str,
-        connection_folder: str = "databases_connection",
+        sgbd_name: str = "postgresql",
+        connection_folder: str = "connection",
     ) -> None:
         """Initialize connection parameters.
 
@@ -28,7 +28,7 @@ class ConnectionDatabase(DatabaseRepository):
             environment (str): Environment type (e.g., dev, prod).
             db_name (str): Database name.
             connection_folder (str): Folder path for connection configs.
-                Defaults to 'databases_connection'.
+                Defaults to 'connection'.
         """
         self.sgbd_name = sgbd_name
         self.environment = environment
@@ -69,7 +69,7 @@ class ConnectionDatabase(DatabaseRepository):
 
             env_vars = dotenv_values(dotenv_path=self.path_file)
 
-            self.jdbc_url = f"jdbc:postgresql://{env_vars['DB_HOST']}:{env_vars['DB_PORT']}/{self.db_name}"
+            self.jdbc_url = f"jdbc:{self.sgbd_name}://{env_vars['DB_HOST']}:{env_vars['DB_PORT']}/{self.db_name}"
             user = env_vars.get("DB_USER") or ""
             password = env_vars.get("DB_PASSWORD") or ""
             self.properties = {
@@ -116,7 +116,6 @@ class ConnectionDatabase(DatabaseRepository):
                 elif self.jdbc_url is None or self.properties is None:
                     self.initialize_jdbc()
 
-                # Create a temporary SparkSession to test the connection
                 spark: SparkSession = SparkSession.builder.getOrCreate()  # pyright: ignore[reportAttributeAccessIssue]
                 assert self.jdbc_url is not None and self.properties is not None
                 df = spark.read.jdbc(
@@ -124,7 +123,7 @@ class ConnectionDatabase(DatabaseRepository):
                     table="(SELECT 1) AS test",
                     properties=self.properties,
                 )
-                df.collect()  # Force execution to verify connection
+                df.collect()
                 print("Successfully connected!")
                 return self.jdbc_url, self.properties
 
