@@ -11,11 +11,13 @@ authors = [
 
 dependencies = [
   "requests>=2.32.5,<3.0.0",
-  "pyspark>=4.1.1,<5.0.0",
+  "pyspark (==3.5.4)",
   "pydantic>=2.12.5,<3.0.0",
   "pandera>=0.28.1,<0.29.0",
   "pandas>=2.3.3,<3.0.0",
-  "python-dotenv (>=1.2.1,<2.0.0)",
+  "python-dotenv>=1.2.1,<2.0.0",
+  "pyarrow (>=23.0.0,<24.0.0)",
+  "dotenv (>=0.9.9,<0.10.0)",
 ]
 
 [project.optional-dependencies]
@@ -35,7 +37,7 @@ package-dir = { "" = "src" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["worker*", "infrastructure*"]
+include = ["worker", "worker.*", "infrastructure", "infrastructure.*"]
 
 [tool.ruff]
 line-length = 88
