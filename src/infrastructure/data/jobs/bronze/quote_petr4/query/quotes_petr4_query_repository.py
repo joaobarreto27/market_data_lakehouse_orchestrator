@@ -1,8 +1,8 @@
-from typing import Any  # noqa: D100
+from typing import Any, Optional  # noqa: D100
 
 from pydantic import ValidationError
 
-from .....utils import ConnectAPI, SparkSessionManager
+from .....utils import ConnectAPI, EnvManager
 from ..validator import QuotesPetr4ValidatorSchema
 
 
@@ -11,12 +11,18 @@ class QuotesPetr4QueryRepository:  # noqa: D101
         """Inicializa a consulta a API com a URL."""
         self.data_json: dict[str, Any] = {}
         self.data: dict[str, Any] = {}
-        self.session = SparkSessionManager()
         self.base_url = base_url
+
+    def get_token(self) -> str:  # noqa: D102
+        api_token: Optional[str] = EnvManager().get_token()
+        if not api_token:
+            raise RuntimeError("Token da API não encontrado em variáveis de ambiente")
+        return api_token
 
     def get_daily_closing(self, quotes):  # noqa: D102
         url = f"{self.base_url}/{quotes}"
-        self.data_json = ConnectAPI(url=url).connect()
+        api_token = self.get_token()
+        self.data_json = ConnectAPI(url=url).connect(bearer_token=api_token)
         if self.data_json:
             self.data = next(iter(self.data_json.values()))
         else:
@@ -31,5 +37,4 @@ class QuotesPetr4QueryRepository:  # noqa: D101
             except ValidationError as e:
                 print(f"Erro de validação no ticker {item.get('symbol')}: {e}")  # pyright: ignore[reportAttributeAccessIssue]
                 raise e
-        print(validated_data)
         return validated_data
