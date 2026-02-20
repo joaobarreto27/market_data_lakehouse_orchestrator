@@ -11,7 +11,12 @@ class SparkSessionManager:
     _instance: Optional["SparkSessionManager"] = None
     _spark: Optional[SparkSession] = None
 
-    def __new__(cls, *args: Any) -> "SparkSessionManager":
+    JDBC_DRIVERS = {
+        "postgresql": "org.postgresql:postgresql:42.7.3",
+        "mysql": "mysql:mysql-connector-java:8.4.0",
+    }
+
+    def __new__(cls, *args: Any, **kwargs: Any) -> "SparkSessionManager":
         """Ensure only one instance exists (singleton pattern).
 
         Returns:
@@ -25,6 +30,7 @@ class SparkSessionManager:
         self,
         app_name: str = "MySparkApp",
         master: str = "local[*]",
+        sgbd_name: Optional[str] = None,
         configs: Optional[Dict[str, str]] = None,
     ) -> None:
         """Initialize the SparkSession automatically on first instance.
@@ -34,13 +40,20 @@ class SparkSessionManager:
                 Defaults to 'MySparkApp'.
             master (str): Master URL (e.g., 'local[*]' or 'yarn').
                 Defaults to 'local[*]'.
+            sgbd_name (str): Database management system name (postgresql or sqlite).
             configs (dict[str, str] | None): Additional Spark configurations.
                 Defaults to None.
         """
         if self._spark is not None:
             return  # Session already initialized
 
-        builder = SparkSession.builder.appName(app_name).master(master)
+        builder = SparkSession.builder.appName(app_name).master(master)  # pyright: ignore[reportAttributeAccessIssue]
+
+        if sgbd_name:
+            package = self.JDBC_DRIVERS.get(sgbd_name)
+            if package:
+                builder = builder.config("spark.jars.packages", package)
+
         if configs:
             for key, value in configs.items():
                 builder = builder.config(key, value)

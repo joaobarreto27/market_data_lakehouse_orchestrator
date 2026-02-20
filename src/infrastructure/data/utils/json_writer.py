@@ -1,4 +1,5 @@
 import json  # noqa: D100
+from pathlib import Path
 
 from ..repository import WriterRepository
 
@@ -10,12 +11,13 @@ class JsonWriter(WriterRepository):  # noqa: D101
         ):
             raise ValueError("Data to write is empty or None")
 
-        temp_path = path_file.with_sufix(".tmp")
+        path_file = Path(path_file)
+        temp_path = path_file.with_suffix(".tmp")
 
         try:
             path_file.parent.mkdir(parents=True, exist_ok=True)
             with open(temp_path, "w", encoding="utf-8") as file:
-                json.dump(data_json, file, indent=4, ensure_ascii=False)
+                json.dump(data_json, file, indent=4, ensure_ascii=False, default=str)
 
             temp_path.rename(path_file)
 
