@@ -293,20 +293,6 @@ files = [
 ]
 
 [[package]]
-name = "dotenv"
-version = "0.9.9"
-description = "Deprecated package"
-optional = false
-python-versions = "*"
-groups = ["main"]
-files = [
-    {file = "dotenv-0.9.9-py2.py3-none-any.whl", hash = "sha256:29cf74a087b31dafdb5a446b6d7e11cbce8ed2741540e2339c69fbef92c94ce9"},
-]
-
-[package.dependencies]
-python-dotenv = "*"
-
-[[package]]
 name = "filelock"
 version = "3.20.3"
 description = "A platform independent file lock."
@@ -1869,4 +1855,4 @@ dev = ["bandit", "mypy", "pandas-stubs", "pip-audit", "pre-commit", "ruff", "tas
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "ff5bc9ec2ebd042ed0526049e44154a32a498f16f4e52abfe4885dedb0010261"
+content-hash = "7640191eb6ad9bda48d040304f4b2dcc3fe060c04f23480bd8437a037a29e19f"

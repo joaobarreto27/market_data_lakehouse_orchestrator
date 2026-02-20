@@ -26,7 +26,6 @@ class LayerPathResolver:  # noqa: D101
     def _get_bronze_path(
         self, source_system: Optional[str], date_interval: Optional[date]
     ):
-
         date_partition = self._generate_date_partition(date_interval)
 
         if source_system:
@@ -44,7 +43,6 @@ class LayerPathResolver:  # noqa: D101
             )
 
     def _get_silver_path(self, domain: Optional[str], date_interval: Optional[date]):
-
         date_partition = self._generate_date_partition(date_interval)
 
         if domain:
