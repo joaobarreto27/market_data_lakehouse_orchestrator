@@ -1,9 +1,12 @@
-from pathlib import Path  # noqa: D100
+import logging  # noqa: D100
+from pathlib import Path
 
 from pyspark.sql import DataFrame, SparkSession
 
 from .connect_database import ConnectionDatabase
 from .sql_query_loader import SqlQueryLoader
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 class PySparkDataReader:
@@ -20,7 +23,8 @@ class PySparkDataReader:
         jdbc_url, properties = db_connection.connect_with_retry()
 
         if not jdbc_url or not properties:
-            raise ValueError("A conexão JDBC não retornou credenciais válidas.")
+            logger.error("A conexão JDBC não retornou credenciais válidas.")
+            raise
 
         wrapped_query = f"({query_text}) AS custom_query"
 
