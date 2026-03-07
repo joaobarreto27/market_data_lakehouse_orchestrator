@@ -1,3 +1,3 @@
-from .http_base_enum import HttpBaseEnum  # noqa: D104
+from .enums import HttpBaseEnum  # noqa: D104
 
-__all__ = ["HttpBaseEnum"]
+__all__: list[str] = ["HttpBaseEnum"]
