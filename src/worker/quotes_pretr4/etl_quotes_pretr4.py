@@ -1,86 +1,118 @@
-"""Worker responsible for executing daily ETL for PETR4 stock quotes."""
+"""Worker responsável por executar o ETL diário de cotações de PETR4."""
 
-import logging
-from datetime import date
 from typing import Any
-
-import pandas as pd
 
 from infrastructure import (
     BronzeEnum,
+    ConnectionDatabase,
+    DatabaseEnum,
     HttpBaseEnum,
-    JsonWriter,
-    ParquetWriter,
+    LayerEnum,
     QuotesEnum,
+    SgbdEnum,
     SourceSystemEnum,
+    SparkSessionManager,
 )
 from infrastructure import (
     bronze_repository_modules as bronze_repository,
 )
-from infrastructure.data.utils import ReadJsonFile
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+from infrastructure import (
+    gold_repository_modules as gold_repository,
 )
+from infrastructure import (
+    silver_repository_modules as silver_repository,
+)
+from infrastructure.data.utils import LayerPathResolver
 
-logger = logging.getLogger(__name__)
+
+def process_bronze() -> Any:
+    """Extrai dados da API e escreve na camada bronze.
+
+    Returns:
+        Any: Dados JSON brutos extraídos da API.
+    """
+    table_name = BronzeEnum.quotes_petr4.name
+    source_system = SourceSystemEnum.brapi.name
+
+    data_json_raw = bronze_repository.QuotesPetr4BronzeQueryRepository(
+        base_url=HttpBaseEnum.api_endpoint.value
+    ).get_daily_closing(quotes=QuotesEnum.PETR4.value)
+
+    bronze_repository.QuotesPetr4BronzeCommandRepository(
+        data_json=data_json_raw,
+        path_file=LayerPathResolver(
+            layer=LayerEnum.bronze.name, table=table_name
+        ).resolver_layer(source_system=source_system),
+    )
+
+    return data_json_raw
+
+
+def process_silver(data_json_raw: Any, spark: Any) -> Any:
+    """Transforma e carrega dados na camada silver.
+
+    Args:
+        data_json_raw: Dados JSON brutos da camada bronze.
+        spark: Sessão PySpark para processamento de dados.
+
+    Returns:
+        Any: Dados transformados da camada silver.
+    """
+    table_name = BronzeEnum.quotes_petr4.name
+
+    data = silver_repository.QuotesPetr4SilverQueryRepository(
+        data_json=data_json_raw,
+        spark_session=spark,
+    ).validate_schema()  # type: ignore
+
+    df = spark.createDataFrame(data)
+
+    silver_repository.QuotesPetr4SilverCommandRepository(
+        path_file_silver=LayerPathResolver(
+            layer=LayerEnum.silver.name, table=table_name
+        ).resolver_layer(domain="finance"),
+        df=df,
+    ).write_silver()
+
+    return data
+
+
+def process_gold(spark: Any, connection) -> None:
+    """Processa e carrega dados na camada gold.
+
+    Args:
+        spark: Sessão PySpark para processamento de dados.
+        connection: Conexão com o banco de dados.
+
+    Implementação futura para transformações analíticas.
+    """
+    df = gold_repository.QuotesPetr4GoldQueryRepository().read_silver_parquet(
+        spark_session=spark,
+        path_file=LayerPathResolver(
+            layer=LayerEnum.silver.name, table=BronzeEnum.quotes_petr4.name
+        ).resolver_layer(domain="finance"),
+    )
+    gold_repository.QuotesPetr4GoldCommandRepository().writer_gold(
+        spark_session=spark,
+        connection=connection,
+        df=df,
+        table_name=BronzeEnum.quotes_petr4.name,
+    )
 
 
 def main() -> None:
-    """Execute daily ETL pipeline for PETR4 stock quotes."""
-    try:
-        logger.info("Starting PETR4 daily ETL pipeline")
+    """Executa o ETL completo de bronze, silver e gold."""
+    spark = SparkSessionManager(sgbd_name=SgbdEnum.postgresql.name)
 
-        table_name = BronzeEnum.quotes_petr4.name
-        source_system = SourceSystemEnum.brapi.name
+    connection = ConnectionDatabase(
+        environment="prd",
+        db_name=DatabaseEnum.market_data_lakehouse_orchestrator.name,
+    )
+    connection.connect_with_retry()
 
-        logger.info(f"Table: {table_name}, Source System: {source_system}")
-
-        # Bronze Layer: Fetch raw data from API
-        logger.info("Querying API for daily closing quotes")
-        data_json_raw: list[Any] = bronze_repository.QuotesPetr4BronzeQueryRepository(
-            base_url=HttpBaseEnum.api_endpoint.value
-        ).get_daily_closing(quotes=QuotesEnum.PETR4.value)  # type:ignore
-
-        today = date.today()
-        path_file_bronze = (
-            f"bronze/{source_system}/{table_name}/"
-            f"year={today.year}/"
-            f"month={today.strftime('%m')}/"
-            f"day={today.strftime('%d')}/"
-            f"{table_name}.json"
-        )
-
-        logger.info(f"Writing raw JSON data to: {path_file_bronze}")
-        JsonWriter().write(data_json_raw, path_file_bronze)
-        logger.info("Raw data successfully written to Bronze layer")
-
-        # Silver Layer: Read, transform, and persist
-        logger.info("Reading Bronze JSON file for transformation")
-        df: pd.DataFrame = ReadJsonFile().read(path_file=path_file_bronze)
-        logger.info(
-            f"""DataFrame loaded with {len(df)} rows and {len(df.columns)} columns.
-            Applying Silver layer transformations and writing to Parquet."""
-        )
-
-        path_file_silver = (
-            f"silver/finance/{table_name}/"
-            f"year={today.year}/"
-            f"month={today.strftime('%m')}/"
-            f"day={today.strftime('%d')}/"
-            f"{table_name}.parquet"
-        )
-
-        logger.info(f"Writing transformed data to: {path_file_silver}")
-        ParquetWriter().write(df, path_file_silver)  # type:ignore
-        logger.info("Transformed data successfully written to Silver layer")
-
-        logger.info("PETR4 daily ETL pipeline completed successfully")
-
-    except Exception as e:
-        logger.exception("PETR4 daily ETL pipeline failed during execution")
-        raise e
+    data_json_raw = process_bronze()
+    process_silver(data_json_raw, spark)
+    process_gold(spark=spark, connection=connection)
 
 
 if __name__ == "__main__":
