@@ -1,6 +1,9 @@
-from datetime import date  # noqa: D100
+import logging  # noqa: D100
+from datetime import date
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 class LayerPathResolver:  # noqa: D101
@@ -21,7 +24,9 @@ class LayerPathResolver:  # noqa: D101
         elif self.layer == "silver":
             return self._get_silver_path(domain=domain, date_interval=date_interval)
         else:
-            raise ValueError("Specify a corresponding layer.")
+            msg = f"Unsupported layer: {self.layer}"
+            logger.error(msg)
+            raise ValueError(msg)
 
     def _get_bronze_path(
         self, source_system: Optional[str], date_interval: Optional[date]
@@ -36,11 +41,12 @@ class LayerPathResolver:  # noqa: D101
                 / date_partition
                 / f"{self.table}.json"
             )
+            logger.info(f"Bronze path resolved for {self.table}")
             return path_file
         else:
-            raise ValueError(
-                """The 'source_system' parameter is required for the Bronze tier."""
-            )
+            msg = f"Source system required for Bronze layer {self.table}"
+            logger.error(msg)
+            raise ValueError(msg)
 
     def _get_silver_path(self, domain: Optional[str], date_interval: Optional[date]):
         date_partition = self._generate_date_partition(date_interval)
@@ -53,11 +59,12 @@ class LayerPathResolver:  # noqa: D101
                 / date_partition
                 / f"{self.table}.parquet"
             )
+            logger.info(f"Silver path resolved for {self.table}")
             return path_file
         else:
-            raise ValueError(
-                """The 'domain' parameter is required for the Silver tier."""
-            )
+            msg = f"Domain required for Silver layer {self.table}"
+            logger.error(msg)
+            raise ValueError(msg)
 
     @staticmethod
     def _generate_date_partition(date_interval) -> str:

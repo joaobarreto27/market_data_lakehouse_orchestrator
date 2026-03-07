@@ -1,10 +1,13 @@
 """Module responsible for connecting to the API."""
 
+import logging
 from typing import Any
 
 import requests
 
 from ..repository import ApiRepository
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectAPI(ApiRepository):
@@ -52,10 +55,9 @@ class ConnectAPI(ApiRepository):
             for x in [auth, token, bearer_token, oauth_token, params_query]
         )
         if auth_methods > 1:
-            raise ValueError(
-                "Choose only one authentication method: auth, bearer_token, "
-                "oauth_token, token, or params_query."
-            )
+            msg = "Multiple authentication methods provided. Only one is allowed."
+            logger.error(msg)
+            raise ValueError(msg)
 
         request_auth = auth
         headers: dict[str, str] = custom_headers.copy() if custom_headers else {}
@@ -80,9 +82,9 @@ class ConnectAPI(ApiRepository):
 
         if response.status_code == 200:
             self.data_json = response.json()
+            logger.info(f"API request to {self.url} successful")
         else:
-            raise ValueError(
-                f"""Connection error: Status code {response.status_code}.
-                Please try again."""
-            )
+            msg = f"API request failed with status {response.status_code}"
+            logger.error(msg)
+            raise ValueError(msg)
         return self.data_json

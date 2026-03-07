@@ -1,9 +1,12 @@
 """Module for managing environment variables and API tokens."""
 
+import logging
 from pathlib import Path
 from typing import Optional
 
 from dotenv import dotenv_values
+
+logger = logging.getLogger(__name__)
 
 
 class EnvManager:
@@ -31,13 +34,18 @@ class EnvManager:
                     self.env_file = candidate
                     break
             else:
-                raise FileNotFoundError(".env file not found in any parent directory.")
+                msg = f"Configuration file not found at: {self.env_file}"
+                logger.error(msg)
+                raise FileNotFoundError(msg)
 
         if not self.env_file.is_file():
-            raise FileNotFoundError(f".env file not found at: {self.env_file}")
+            msg = f"Configuration file not found at: {self.env_file}"
+            logger.error(msg)
+            raise FileNotFoundError(msg)
 
         # Load all variables from .env
         self.env_vars = dotenv_values(dotenv_path=self.env_file)
+        logger.info(f".env file loaded from: {self.env_file}")
 
     def get_token(self, token_name: Optional[str] = None) -> Optional[str]:
         """Retrieve the API token from .env file.
@@ -52,7 +60,9 @@ class EnvManager:
         token_name = token_name or "API_TOKEN"
         token = self.env_vars.get(token_name)
         if token is None:
-            print(f"Warning: variable '{token_name}' not found in .env file")
+            logger.warning(f"API token '{token_name}' not found in .env")
+        else:
+            logger.info(f"API token '{token_name}' retrieved")
         return token
 
     def get_variable(self, var_name: str) -> Optional[str]:
@@ -66,5 +76,7 @@ class EnvManager:
         """
         value = self.env_vars.get(var_name)
         if value is None:
-            print(f"Warning: variable '{var_name}' not found in .env file")
+            logger.warning(f"Variable '{var_name}' not found in .env")
+        else:
+            logger.debug(f"Variable '{var_name}' retrieved")
         return value
