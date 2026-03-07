@@ -1,4 +1,10 @@
-import json  # noqa: D100
+"""Module for writing data to JSON format.
+
+Provides utilities for persisting data structures as JSON files,
+with support for both local file systems and S3 cloud storage.
+"""
+
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -10,11 +16,36 @@ from ..repository import WriterRepository
 logger = logging.getLogger(__name__)
 
 
-class JsonWriter(WriterRepository):  # noqa: D101
-    def __init__(self, spark: SparkSession = None) -> None:  # type: ignore  # noqa: D107
+class JsonWriter(WriterRepository):
+    """Writer for persisting data structures to JSON format.
+
+    Supports writing dictionaries and lists to local files and S3 cloud storage
+    with automatic parent directory creation and atomic file operations.
+    """
+
+    def __init__(self, spark: SparkSession = None) -> None:  # type: ignore
+        """Initialize JsonWriter with optional SparkSession.
+
+        Args:
+            spark: PySpark SparkSession instance for S3 operations.
+                  Required only for write_to_s3 operations.
+        """
         self.spark = spark
 
-    def write(self, data_json, path_file) -> None:  # noqa: D102
+    def write(self, data_json: Any, path_file: Path) -> None:
+        """Write data to local file system in JSON format.
+
+        Performs atomic write operation using temporary file and rename to ensure
+        data integrity. Creates parent directories if they don't exist.
+
+        Args:
+            data_json: Data structure (list or dict) to persist.
+            path_file: Destination file path for JSON file.
+
+        Raises:
+            ValueError: If data is empty or None.
+            IOError: If file write operation fails.
+        """
         if data_json is None or (
             isinstance(data_json, (list, dict)) and len(data_json) == 0
         ):

@@ -1,4 +1,8 @@
-"""Module for managing environment variables and API tokens."""
+"""Module for managing environment variables and API authentication tokens.
+
+Provides utilities for loading and retrieving configuration from .env files,
+including API tokens and other sensitive configuration parameters.
+"""
 
 import logging
 from pathlib import Path
