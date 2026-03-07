@@ -25,10 +25,10 @@ jobs:
       # 2️⃣ Check merge conflicts with main
       - name: Check merge conflicts
         run: |
-          git fetch origin main
+          git fetch origin ${{ github.base_ref }}
           git checkout ${{ github.head_ref }}
-          git merge --no-commit --no-ff origin/main || (
-            echo "❌ Merge conflict detected with main branch"
+          git merge --no-commit --no-ff origin/${{ github.base_ref }} || (
+            echo "❌ Merge conflict detected with ${{ github.base_ref }} branch"
             exit 1
           )
 
