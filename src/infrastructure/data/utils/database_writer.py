@@ -12,7 +12,11 @@ from .connect_database import ConnectionDatabase
 class DatabaseWriter(WriterRepository):
     """Manages data loading into databases with Spark."""
 
-    def __init__(self, spark: SparkSession, connect: ConnectionDatabase) -> None:
+    def __init__(  # noqa: D417
+        self,
+        spark: SparkSession,
+        connect: ConnectionDatabase,
+    ) -> None:
         """Initialize the connection for loading data into the database.
 
         Args:

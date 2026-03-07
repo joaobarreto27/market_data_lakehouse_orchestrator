@@ -49,10 +49,20 @@ class SparkSessionManager:
 
         builder = SparkSession.builder.appName(app_name).master(master)  # pyright: ignore[reportAttributeAccessIssue]
 
+        packages = []
+
         if sgbd_name:
-            package = self.JDBC_DRIVERS.get(sgbd_name)
-            if package:
-                builder = builder.config("spark.jars.packages", package)
+            jdbc_pkg = self.JDBC_DRIVERS.get(sgbd_name)
+            if jdbc_pkg:
+                packages.append(jdbc_pkg)
+
+        packages.append("org.apache.hadoop:hadoop-aws:3.3.4")
+        builder = builder.config("spark.jars.packages", ",".join(packages))
+
+        builder = builder.config(
+            "fs.s3a.aws.credentials.provider",
+            "com.amazonaws.auth.DefaultAWSCredentialsProviderChain",
+        )
 
         if configs:
             for key, value in configs.items():
