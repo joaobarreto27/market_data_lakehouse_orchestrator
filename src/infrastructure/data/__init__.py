@@ -2,8 +2,12 @@
 
 from .connection import DatabaseEnum, SgbdEnum
 from .http_base import HttpBaseEnum
-from .jobs import BronzeEnum, QuotesEnum
-from .repository_modules import bronze_repository_modules
+from .jobs.bronze import BronzeEnum, QuotesEnum
+from .repository_modules import (
+    bronze_repository_modules,
+    gold_repository_modules,
+    silver_repository_modules,
+)
 from .utils import (
     ConnectAPI,
     ConnectionDatabase,
@@ -28,4 +32,6 @@ __all__ = [
     "SgbdEnum",
     "SparkSessionManager",
     "QuotesEnum",
+    "silver_repository_modules",
+    "gold_repository_modules",
 ]
