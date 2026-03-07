@@ -1,0 +1,31 @@
+{
+    "cSpell.words": [
+        "bandit",
+        "convention",
+        "explicit",
+        "find",
+        "gold",
+        "google",
+        "length",
+        "line",
+        "missing",
+        "mypy",
+        "optional",
+        "pandera",
+        "pyarrow",
+        "pydantic",
+        "pydocstyle",
+        "pyspark",
+        "pytest",
+        "ruff",
+        "setuptools",
+        "stubs",
+        "style",
+        "taskipy",
+        "term",
+        "tool",
+        "true",
+        "wheel",
+        "where"
+    ]
+}

@@ -5,8 +5,8 @@ from typing import Optional
 
 class LayerPathResolver:  # noqa: D101
     def __init__(self, layer: str, table: str) -> None:  # noqa: D107
-        self.layer = layer
-        self.table = table
+        self.layer: str = layer
+        self.table: str = table
 
     def resolver_layer(  # noqa: D102
         self,
@@ -25,12 +25,11 @@ class LayerPathResolver:  # noqa: D101
 
     def _get_bronze_path(
         self, source_system: Optional[str], date_interval: Optional[date]
-    ):
-
+    ) -> Path:
         date_partition = self._generate_date_partition(date_interval)
 
         if source_system:
-            path_file = (
+            path_file: Path = (
                 Path(self.layer)
                 / source_system
                 / self.table
@@ -44,11 +43,10 @@ class LayerPathResolver:  # noqa: D101
             )
 
     def _get_silver_path(self, domain: Optional[str], date_interval: Optional[date]):
-
         date_partition = self._generate_date_partition(date_interval)
 
         if domain:
-            path_file = (
+            path_file: Path = (
                 Path(self.layer)
                 / domain
                 / self.table
@@ -66,7 +64,7 @@ class LayerPathResolver:  # noqa: D101
         if not date_interval:
             date_interval = date.today()
 
-        date_particion = (
+        date_particion: str = (
             f"year={date_interval.year}/"
             f"month={date_interval.strftime('%m')}/"
             f"day={date_interval.strftime('%d')}"

@@ -1,12 +1,9 @@
 from typing import Any, Optional  # noqa: D100
 
-from pydantic import ValidationError
-
 from .....utils import ConnectAPI, EnvManager
-from ..validator import QuotesPetr4ValidatorSchema
 
 
-class QuotesPetr4QueryRepository:  # noqa: D101
+class QuotesPetr4BronzeQueryRepository:  # noqa: D101
     def __init__(self, base_url: str) -> None:
         """Inicializa a consulta a API com a URL."""
         self.data_json: dict[str, Any] = {}
@@ -27,14 +24,4 @@ class QuotesPetr4QueryRepository:  # noqa: D101
             self.data = next(iter(self.data_json.values()))
         else:
             raise ValueError("Dicionário vazio, tente novamente!")
-
-        validated_data = []
-
-        for item in self.data:
-            try:
-                stock = QuotesPetr4ValidatorSchema.model_validate(item)
-                validated_data.append(stock.model_dump())
-            except ValidationError as e:
-                print(f"Erro de validação no ticker {item.get('symbol')}: {e}")  # pyright: ignore[reportAttributeAccessIssue]
-                raise e
-        return validated_data
+        return self.data_json

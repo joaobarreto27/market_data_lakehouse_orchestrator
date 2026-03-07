@@ -24,7 +24,7 @@ def main() -> None:
     table_name = BronzeEnum.quotes_petr4.name
     source_system = SourceSystemEnum.brapi.name
 
-    data_json_raw: list[Any] = bronze_repository.QuotesPetr4QueryRepository(
+    data_json_raw: list[Any] = bronze_repository.QuotesPetr4BronzeQueryRepository(
         base_url=HttpBaseEnum.api_endpoint.value
     ).get_daily_closing(quotes=QuotesEnum.PETR4.value)  # type:ignore
 

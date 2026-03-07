@@ -124,7 +124,6 @@ class ConnectionDatabase(DatabaseRepository):
                     properties=self.properties,
                 )
                 df.collect()
-                print("Successfully connected!")
                 return self.jdbc_url, self.properties
 
             except Exception as e:
