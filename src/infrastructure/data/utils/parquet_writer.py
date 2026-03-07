@@ -1,4 +1,9 @@
-# noqa: D100
+"""Module for writing DataFrame data to Parquet format.
+
+Provides utilities for persisting PySpark DataFrames as Parquet files,
+with support for both local file systems and S3 cloud storage.
+"""
+
 import logging
 import shutil
 from pathlib import Path
@@ -11,11 +16,36 @@ from ..repository import WriterRepository
 logger = logging.getLogger(__name__)
 
 
-class ParquetWriter(WriterRepository):  # noqa: D101
-    def __init__(self, spark: SparkSession = None):  # type: ignore  # noqa: D107
+class ParquetWriter(WriterRepository):
+    """Writer for persisting DataFrames to Parquet format.
+
+    Supports writing to local file system and S3 cloud storage with
+    atomic file operations for data integrity.
+    """
+
+    def __init__(self, spark: SparkSession = None) -> None:  # type: ignore
+        """Initialize ParquetWriter with optional SparkSession.
+
+        Args:
+            spark: PySpark SparkSession instance for S3 operations.
+                  Required only for write_to_s3 operations.
+        """
         self.spark = spark
 
-    def write(self, df: DataFrame, path_file: Path) -> None:  # noqa: D102
+    def write(self, df: DataFrame, path_file: Path) -> None:
+        """Write DataFrame to local file system in Parquet format.
+
+        Performs atomic write operation using temporary file and rename to ensure
+        data integrity. Creates parent directories if they don't exist.
+
+        Args:
+            df: PySpark DataFrame to persist.
+            path_file: Destination file path for Parquet file.
+
+        Raises:
+            ValueError: If DataFrame is empty.
+            IOError: If file write operation fails.
+        """
         if df.rdd.isEmpty():
             msg = f"Cannot write empty DataFrame to {path_file}"
             logger.error(msg)

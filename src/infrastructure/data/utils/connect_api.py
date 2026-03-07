@@ -1,4 +1,8 @@
-"""Module responsible for connecting to the API."""
+"""Module for HTTP API connections with flexible authentication support.
+
+Provides utilities for making authenticated HTTP requests with support for
+multiple authentication methods including basic auth, bearer tokens, and OAuth.
+"""
 
 import logging
 from typing import Any

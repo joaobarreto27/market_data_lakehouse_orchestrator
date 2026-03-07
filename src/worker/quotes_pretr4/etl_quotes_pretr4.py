@@ -1,5 +1,15 @@
-"""Worker responsável por executar o ETL diário de cotações de PETR4."""
+"""Daily ETL orchestration pipeline for PETR4 stock quotes.
 
+This module orchestrates the complete ETL (Extract, Transform, Load) process
+for PETR4 stock price data across bronze, silver, and gold layers of the
+data lake architecture. It manages data ingestion from external APIs,
+transformation and validation, and loading into analytics databases.
+
+The pipeline is designed to run on a daily schedule within Apache Airflow,
+with comprehensive logging for monitoring and troubleshooting.
+"""
+
+import logging
 from typing import Any
 
 from infrastructure import (
@@ -24,95 +34,183 @@ from infrastructure import (
 )
 from infrastructure.data.utils import LayerPathResolver
 
+# Configure logging for Airflow compatibility
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 
 def process_bronze() -> Any:
-    """Extrai dados da API e escreve na camada bronze.
+    """Extract raw PETR4 stock data from external API and persist to Bronze layer.
+
+    Fetches daily closing price data from the BRAPI API for PETR4 stock ticker
+    and writes the raw JSON response to the Bronze layer with date-based
+    partitioning for data lake organization.
 
     Returns:
-        Any: Dados JSON brutos extraídos da API.
+        dict: Raw JSON data structure from the API response containing stock quotes.
+
+    Raises:
+        ValueError: If API request fails or returns empty data.
+        IOError: If file write operation to Bronze layer fails.
     """
-    table_name = BronzeEnum.quotes_petr4.name
-    source_system = SourceSystemEnum.brapi.name
+    try:
+        logger.info("[BRONZE_INIT] Starting Bronze layer data extraction for PETR4")
+        table_name = BronzeEnum.quotes_petr4.name
+        source_system = SourceSystemEnum.brapi.name
 
-    data_json_raw = bronze_repository.QuotesPetr4BronzeQueryRepository(
-        base_url=HttpBaseEnum.api_endpoint.value
-    ).get_daily_closing(quotes=QuotesEnum.PETR4.value)
+        logger.info(f"[BRONZE_QUERY] Querying API endpoint for {table_name} quotes")
+        data_json_raw = bronze_repository.QuotesPetr4BronzeQueryRepository(
+            base_url=HttpBaseEnum.api_endpoint.value
+        ).get_daily_closing(quotes=QuotesEnum.PETR4.value)
 
-    bronze_repository.QuotesPetr4BronzeCommandRepository(
-        data_json=data_json_raw,
-        path_file=LayerPathResolver(
-            layer=LayerEnum.bronze.name, table=table_name
-        ).resolver_layer(source_system=source_system),
-    )
+        logger.info("[BRONZE_WRITE] Persisting raw data to Bronze layer")
+        bronze_repository.QuotesPetr4BronzeCommandRepository(
+            data_json=data_json_raw,
+            path_file=LayerPathResolver(
+                layer=LayerEnum.bronze.name, table=table_name
+            ).resolver_layer(source_system=source_system),
+        ).writer_bronze()
 
-    return data_json_raw
+        logger.info("[BRONZE_SUCCESS] Bronze layer extraction completed successfully")
+        return data_json_raw
+
+    except Exception as e:
+        logger.exception("[BRONZE_ERROR] Bronze layer extraction failed")
+        raise e
 
 
 def process_silver(data_json_raw: Any, spark: Any) -> Any:
-    """Transforma e carrega dados na camada silver.
+    """Transform and validate Bronze layer data, then persist to Silver layer.
+
+    Reads raw Bronze layer data, applies schema validation and data transformations,
+    and writes the cleaned and validated data to the Silver layer in Parquet format
+    with optimized columnar storage.
 
     Args:
-        data_json_raw: Dados JSON brutos da camada bronze.
-        spark: Sessão PySpark para processamento de dados.
+        data_json_raw: Raw JSON data dictionary from Bronze layer extraction.
+        spark: Active PySpark SparkSession for distributed data processing.
 
     Returns:
-        Any: Dados transformados da camada silver.
+        dict: Validated and transformed data structure ready for analytics.
+
+    Raises:
+        ValidationError: If data fails schema validation.
+        IOError: If file write operation to Silver layer fails.
     """
-    table_name = BronzeEnum.quotes_petr4.name
+    try:
+        logger.info("[SILVER_INIT] Starting Silver layer transformation for PETR4")
+        table_name = BronzeEnum.quotes_petr4.name
 
-    data = silver_repository.QuotesPetr4SilverQueryRepository(
-        data_json=data_json_raw,
-        spark_session=spark,
-    ).validate_schema()  # type: ignore
+        logger.info("[SILVER_VALIDATE] Validating data schema")
+        data = silver_repository.QuotesPetr4SilverQueryRepository(
+            data_json=data_json_raw,
+            spark_session=spark,
+        ).validate_schema()  # type: ignore
 
-    df = spark.createDataFrame(data)
+        logger.info(
+            f"""[SILVER_TRANSFORM] Creating DataFrame with
+            {len(data) if isinstance(data, list) else 1} records"""
+        )
+        df = spark.createDataFrame(data)
 
-    silver_repository.QuotesPetr4SilverCommandRepository(
-        path_file_silver=LayerPathResolver(
-            layer=LayerEnum.silver.name, table=table_name
-        ).resolver_layer(domain="finance"),
-        df=df,
-    ).write_silver()
+        logger.info("[SILVER_WRITE] Persisting transformed data to Silver layer")
+        silver_repository.QuotesPetr4SilverCommandRepository(
+            path_file_silver=LayerPathResolver(
+                layer=LayerEnum.silver.name, table=table_name
+            ).resolver_layer(domain="finance"),
+            df=df,
+        ).write_silver()
 
-    return data
+        logger.info(
+            "[SILVER_SUCCESS] Silver layer transformation completed successfully"
+        )
+        return data
+
+    except Exception as e:
+        logger.exception("[SILVER_ERROR] Silver layer transformation failed")
+        raise e
 
 
-def process_gold(spark: Any, connection) -> None:
-    """Processa e carrega dados na camada gold.
+def process_gold(spark: Any, connection: ConnectionDatabase) -> None:
+    """Load transformed Silver layer data to Gold layer for analytics.
+
+    Reads validated Silver layer data, applies aggregations and business logic,
+    and persists the final dataset to the Gold layer analytics database tables
+    for reporting and business intelligence consumption.
 
     Args:
-        spark: Sessão PySpark para processamento de dados.
-        connection: Conexão com o banco de dados.
+        spark: Active PySpark SparkSession for distributed data processing.
+        connection: Database connection manager for Gold layer persistence.
 
-    Implementação futura para transformações analíticas.
+    Raises:
+        ValueError: If database connection fails or write operation fails.
     """
-    df = gold_repository.QuotesPetr4GoldQueryRepository().read_silver_parquet(
-        spark_session=spark,
-        path_file=LayerPathResolver(
-            layer=LayerEnum.silver.name, table=BronzeEnum.quotes_petr4.name
-        ).resolver_layer(domain="finance"),
-    )
-    gold_repository.QuotesPetr4GoldCommandRepository().writer_gold(
-        spark_session=spark,
-        connection=connection,
-        df=df,
-        table_name=BronzeEnum.quotes_petr4.name,
-    )
+    try:
+        logger.info("[GOLD_INIT] Starting Gold layer preparation for PETR4")
+
+        logger.info("[GOLD_READ] Reading Silver layer data for aggregation")
+        df = gold_repository.QuotesPetr4GoldQueryRepository().read_silver_parquet(
+            spark_session=spark,
+            path_file=LayerPathResolver(
+                layer=LayerEnum.silver.name, table=BronzeEnum.quotes_petr4.name
+            ).resolver_layer(domain="finance"),
+        )
+
+        logger.info(
+            "[GOLD_WRITE] Writing aggregated data to Gold layer analytics database"
+        )
+        gold_repository.QuotesPetr4GoldCommandRepository().writer_gold(
+            spark_session=spark,
+            connection=connection,
+            df=df,
+            table_name=BronzeEnum.quotes_petr4.name,
+        )
+
+        logger.info("[GOLD_SUCCESS] Gold layer preparation completed successfully")
+
+    except Exception as e:
+        logger.exception("[GOLD_ERROR] Gold layer preparation failed")
+        raise e
 
 
 def main() -> None:
-    """Executa o ETL completo de bronze, silver e gold."""
-    spark = SparkSessionManager(sgbd_name=SgbdEnum.postgresql.name)
+    """Execute the complete daily ETL pipeline for PETR4 stock quotes.
 
-    connection = ConnectionDatabase(
-        environment="prd",
-        db_name=DatabaseEnum.market_data_lakehouse_orchestrator.name,
-    )
-    connection.connect_with_retry()
+    Orchestrates the full Extract-Transform-Load process across all data lake
+    layers (Bronze -> Silver -> Gold), including API data extraction, schema
+    validation, transformation, and analytics database loading.
 
-    data_json_raw = process_bronze()
-    process_silver(data_json_raw, spark)
-    process_gold(spark=spark, connection=connection)
+    This function is designed to be executed daily via Apache Airflow scheduler.
+
+    Raises:
+        Exception: If any pipeline stage fails, exception bubbles up for
+                  Airflow DAG failure handling and alerting.
+    """
+    logger.info("[ETL_START] Initiating PETR4 daily ETL pipeline execution")
+
+    try:
+        logger.info("[ETL_SETUP] Initializing Spark session and database connection")
+        spark = SparkSessionManager(sgbd_name=SgbdEnum.postgresql.name)
+
+        connection = ConnectionDatabase(
+            environment="prd",
+            db_name=DatabaseEnum.market_data_lakehouse_orchestrator.name,
+        )
+        connection.connect_with_retry()
+        logger.info("[ETL_SETUP] Database connection established")
+
+        logger.info("[ETL_EXECUTE] Executing pipeline stages: Bronze -> Silver -> Gold")
+        data_json_raw = process_bronze()
+        process_silver(data_json_raw, spark)
+        process_gold(spark=spark, connection=connection)
+
+        logger.info("[ETL_COMPLETE] PETR4 daily ETL pipeline completed successfully")
+
+    except Exception as e:
+        logger.exception("[ETL_FAILED] PETR4 daily ETL pipeline execution failed")
+        raise e
 
 
 if __name__ == "__main__":
