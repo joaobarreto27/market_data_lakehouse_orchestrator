@@ -1,6 +1,10 @@
-from pydantic import ValidationError  # noqa: D100
+import logging  # noqa: D100
+
+from pydantic import ValidationError
 
 from ..validator import QuotesPetr4ValidatorSchema
+
+logger = logging.getLogger(__name__)
 
 
 class QuotesPetr4SilverQueryRepository:  # noqa: D101
@@ -18,6 +22,6 @@ class QuotesPetr4SilverQueryRepository:  # noqa: D101
                 stock = QuotesPetr4ValidatorSchema.model_validate(item)
                 validated_data.append(stock.model_dump())
             except ValidationError as e:
-                print(f"Erro de validação no ticker {item.get('symbol')}: {e}")  # pyright: ignore[reportAttributeAccessIssue]
+                logger.exception(f"Erro de validação no ticker {item.get('symbol')}")
                 raise e
         return data_json

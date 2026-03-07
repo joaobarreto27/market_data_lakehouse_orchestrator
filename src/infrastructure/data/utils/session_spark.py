@@ -1,8 +1,11 @@
 """Module for managing PySpark SparkSession."""
 
+import logging  # noqa: D100
 from typing import Any, Dict, Optional
 
 from pyspark.sql import SparkSession
+
+logger = logging.getLogger(__name__)
 
 
 class SparkSessionManager:
@@ -89,7 +92,9 @@ class SparkSessionManager:
             session.createDataFrame(...)
         """
         if self._spark is None:
-            raise AttributeError("SparkSession not yet initialized.")
+            msg = "SparkSession not yet initialized."
+            logger.error(msg)
+            raise AttributeError(msg)
         return getattr(self._spark, item)
 
     def stop(self) -> None:

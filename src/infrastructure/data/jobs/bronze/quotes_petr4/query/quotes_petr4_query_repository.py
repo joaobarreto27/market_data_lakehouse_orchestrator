@@ -12,7 +12,6 @@ class QuotesPetr4BronzeQueryRepository:  # noqa: D101
         self.data_json: dict[str, Any] = {}
         self.data: dict[str, Any] = {}
         self.base_url = base_url
-        logger.debug(f"BronzeQueryRepository initialized with base URL: {base_url}")
 
     def get_token(self) -> str:  # noqa: D102
         try:

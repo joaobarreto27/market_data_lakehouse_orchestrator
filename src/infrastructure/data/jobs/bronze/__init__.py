@@ -5,7 +5,7 @@ from .quotes_petr4 import (
     QuotesPetr4BronzeQueryRepository,
 )
 
-__all__ = [
+__all__: list[str] = [
     "QuotesPetr4BronzeQueryRepository",
     "BronzeEnum",
     "QuotesEnum",

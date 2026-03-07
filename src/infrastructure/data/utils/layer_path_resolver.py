@@ -16,7 +16,7 @@ class LayerPathResolver:  # noqa: D101
         source_system: Optional[str] = None,
         domain: Optional[str] = None,
         date_interval: Optional[date] = None,
-    ):  # noqa: D102
+    ) -> Path:  # noqa: D102
         if self.layer == "bronze":
             return self._get_bronze_path(
                 source_system=source_system, date_interval=date_interval

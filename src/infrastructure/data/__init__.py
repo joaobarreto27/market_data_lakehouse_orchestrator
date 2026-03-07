@@ -18,7 +18,7 @@ from .utils import (
     SparkSessionManager,
 )
 
-__all__ = [
+__all__: list[str] = [
     "BronzeEnum",
     "bronze_repository_modules",
     "ConnectAPI",

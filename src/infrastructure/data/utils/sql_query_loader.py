@@ -1,5 +1,8 @@
-from functools import cached_property  # noqa: D100
+import logging  # noqa: D100
+from functools import cached_property
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 
 class SqlQueryLoader:
@@ -9,8 +12,6 @@ class SqlQueryLoader:
 
     Exemplo de uso:
         loader = SqlQueryLoader("minha_analise", "silver")
-        print(loader.query)         # → lê e cacheia na primeira vez
-        print(loader.path)          # → caminho validado
     """
 
     def __init__(
@@ -43,7 +44,9 @@ class SqlQueryLoader:
         )
 
         if not path.is_file():
-            raise FileNotFoundError(f"Arquivo SQL não encontrado: {path}")
+            msg = f"Arquivo SQL não encontrado: {path}"
+            logger.error(msg)
+            raise FileNotFoundError(msg)
 
         return path
 
