@@ -6,7 +6,6 @@ connectors, file writers/readers, path resolution, and Spark session
 management.
 """
 
-# ruff: noqa: D104
 from .connect_api import ConnectAPI as ConnectAPI
 from .connect_database import ConnectionDatabase as ConnectionDatabase
 from .database_writer import DatabaseWriter as DatabaseWriter

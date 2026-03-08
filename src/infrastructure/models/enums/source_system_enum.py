@@ -1,5 +1,9 @@
-from enum import Enum  # noqa: D100
+"""Enumeration of source systems providing data."""
+
+from enum import Enum
 
 
-class SourceSystemEnum(Enum):  # noqa: D101
+class SourceSystemEnum(Enum):
+    """Identifiers for external data sources used by the pipeline."""
+
     brapi = 1

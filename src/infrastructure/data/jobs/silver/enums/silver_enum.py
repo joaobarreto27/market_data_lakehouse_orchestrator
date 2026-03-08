@@ -1,7 +1,11 @@
-from enum import Enum  # noqa: D100
+"""Enumerations representing data entities in the Silver layer."""
+
+from enum import Enum
 
 
-class SilverEnum(Enum):  # noqa: D101
+class SilverEnum(Enum):
+    """Identifiers for different Silver-layer quote datasets."""
+
     quotes_petr4 = 1
     quotes_vale3 = 2
     quotes_petr3 = 3

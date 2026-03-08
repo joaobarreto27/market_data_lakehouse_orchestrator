@@ -1,7 +1,11 @@
-from enum import Enum  # noqa: D100
+"""Enumeration of supported SGBD (database engines)."""
+
+from enum import Enum
 
 
-class SgbdEnum(Enum):  # noqa: D101
+class SgbdEnum(Enum):
+    """Identifiers for SQL database management systems."""
+
     postgresql = 1
     mysql = 2
     sqlserver = 3

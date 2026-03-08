@@ -1,4 +1,11 @@
-import logging  # noqa: D100
+"""Lazy loading utility for SQL query files with caching.
+
+This module provides a helper that resolves a SQL file path based on
+layer and file name, validates its existence, and reads the contents only
+once when accessed.
+"""
+
+import logging
 from functools import cached_property
 from pathlib import Path
 
@@ -6,12 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 class SqlQueryLoader:
-    """Carrega o conteúdo de um arquivo .sql de forma lazy (apenas primeira consulta).
+    """Load the contents of a .sql file lazily with caching.
 
-    Com cache automático e validação de existência do arquivo.
+    The path is constructed using the specified layer and file name. The
+    file's existence is checked on first access, raising
+    ``FileNotFoundError`` if it does not exist. Query text is read
+    once and then cached.
 
-    Exemplo de uso:
-        loader = SqlQueryLoader("minha_analise", "silver")
+    Example:
+        loader = SqlQueryLoader("my_analysis", "silver")
     """
 
     def __init__(
@@ -20,11 +30,13 @@ class SqlQueryLoader:
         layer: str,
         base_dir: Path | None = None,
     ) -> None:
-        """Args
+        """Initialize the loader with SQL file metadata.
 
-        sql_file: Nome do arquivo SQL (sem a extensão .sql)
-        layer: Camada do data lake/warehouse (bronze, silver, gold...)
-        base_dir: Diretório base opcional (para testes ou ambientes diferentes)
+        Args:
+            sql_file (str): name of the SQL file without ".sql" extension.
+            layer (str): data layer name (e.g. "bronze", "silver", "gold").
+            base_dir (Path | None): optional base directory overriding the
+                default location, useful for testing or custom layouts.
         """
         self.sql_file: str = sql_file
         self.layer: str = layer
@@ -34,17 +46,17 @@ class SqlQueryLoader:
 
     @cached_property
     def path(self) -> Path:
-        """Caminho absoluto do arquivo .sql.
+        """Absolute path to the SQL file.
 
-        Valida a existência na primeira consulta → levanta FileNotFoundError
-        se não existir.
+        The existence of the file is validated the first time this property
+        is accessed, and a ``FileNotFoundError`` is raised if not found.
         """
         path = self._base_dir.joinpath(
             "jobs", self.layer, self.sql_file, "sql", "query", f"{self.sql_file}.sql"
         )
 
         if not path.is_file():
-            msg = f"Arquivo SQL não encontrado: {path}"
+            msg = f"SQL file not found: {path}"
             logger.error(msg)
             raise FileNotFoundError(msg)
 
@@ -52,8 +64,8 @@ class SqlQueryLoader:
 
     @cached_property
     def query(self) -> str:
-        """Conteúdo completo do arquivo SQL (lido uma única vez e cacheado).
+        """Full contents of the SQL file (read once and cached).
 
-        Usa encoding UTF-8.
+        The file is opened using UTF-8 encoding.
         """
         return self.path.read_text(encoding="utf-8")

@@ -1,6 +1,6 @@
 """Module for managing PySpark SparkSession."""
 
-import logging  # noqa: D100
+import logging
 from typing import Any, Dict, Optional
 
 from pyspark.sql import SparkSession
