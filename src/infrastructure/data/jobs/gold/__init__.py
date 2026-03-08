@@ -1,4 +1,6 @@
-from .quotes_petr4 import (  # noqa: D104
+"""Gold layer job package offering analytics persistence components."""
+
+from .quotes_petr4 import (
     QuotesPetr4GoldCommandRepository,
     QuotesPetr4GoldQueryRepository,
 )

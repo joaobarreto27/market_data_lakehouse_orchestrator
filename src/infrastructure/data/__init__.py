@@ -1,3 +1,11 @@
+"""Top-level data infrastructure package.
+
+This package aggregates enums, repository modules, and utility classes
+used across the infrastructure layer of the market data lakehouse
+orchestrator. It exposes a simplified API for importing core components
+such as database connectors, writers, and Spark session managers.
+"""
+
 # ruff: noqa: D104
 
 from .connection import DatabaseEnum, SgbdEnum

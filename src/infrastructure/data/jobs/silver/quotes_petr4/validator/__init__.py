@@ -1,4 +1,4 @@
-"""Pacote de validação para eventos de cotação de PETR4."""
+"""Validation package for PETR4 quote events in Silver layer."""
 
 from .quotes_pretr4_validator_schema import (
     QuotesPetr4ValidatorSchema as QuotesPetr4ValidatorSchema,
