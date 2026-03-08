@@ -1,4 +1,11 @@
-# ruff: noqa: D104
+"""Utilities package containing common helpers and I/O components.
+
+This subpackage provides reusable utilities used throughout the
+market data lakehouse orchestrator, including database and API
+connectors, file writers/readers, path resolution, and Spark session
+management.
+"""
+
 from .connect_api import ConnectAPI as ConnectAPI
 from .connect_database import ConnectionDatabase as ConnectionDatabase
 from .database_writer import DatabaseWriter as DatabaseWriter

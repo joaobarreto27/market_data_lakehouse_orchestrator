@@ -1,4 +1,6 @@
-from .enums import SilverEnum  # noqa: D104
+"""Silver layer job package containing validation and writing utilities."""
+
+from .enums import SilverEnum
 from .quotes_petr4 import (
     QuotesPetr4SilverCommandRepository,
     QuotesPetr4SilverQueryRepository,

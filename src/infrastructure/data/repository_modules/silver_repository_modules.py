@@ -1,4 +1,6 @@
-from ..jobs.silver import (  # noqa: D100
+"""Aggregated exports of Silver-layer repository utilities and enums."""
+
+from ..jobs.silver import (
     QuotesPetr4SilverCommandRepository as QuotesPetr4SilverCommandRepository,
 )
 from ..jobs.silver import (

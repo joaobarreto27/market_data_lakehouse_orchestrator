@@ -1,4 +1,6 @@
-from .quotes_petr4_query_repository import (  # noqa: D104
+"""Query utilities for PETR4 Silver layer operations."""
+
+from .quotes_petr4_query_repository import (
     QuotesPetr4SilverQueryRepository,
 )
 

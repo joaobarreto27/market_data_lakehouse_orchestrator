@@ -1,4 +1,9 @@
-# ruff: noqa: D104
+"""Bronze layer job package providing extraction utilities.
+
+Contains enums and PETR4-specific query/command repositories for
+bronze layer data ingestion.
+"""
+
 from .enums import BronzeEnum, QuotesEnum
 from .quotes_petr4 import (
     QuotesPetr4BronzeCommandRepository,

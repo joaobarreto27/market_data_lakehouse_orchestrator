@@ -1,7 +1,11 @@
-from enum import Enum  # noqa: D100
+"""Enumerations representing data entities in the Bronze layer."""
+
+from enum import Enum
 
 
-class BronzeEnum(Enum):  # noqa: D101
+class BronzeEnum(Enum):
+    """Identifiers for different Bronze-layer quote datasets."""
+
     quotes_petr4 = 1
     quotes_vale3 = 2
     quotes_petr3 = 3

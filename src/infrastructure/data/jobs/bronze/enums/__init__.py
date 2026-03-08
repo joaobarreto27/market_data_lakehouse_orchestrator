@@ -1,4 +1,5 @@
-# ruff: noqa: D104
+"""Enum definitions used by Bronze layer jobs."""
+
 from .bronze_enum import BronzeEnum
 from .quotes_enum import QuotesEnum
 

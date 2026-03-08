@@ -1,4 +1,6 @@
-from .quotes_petr4_command_repository import (  # noqa: D104
+"""Command utilities for writing PETR4 Bronze layer data."""
+
+from .quotes_petr4_command_repository import (
     QuotesPetr4BronzeCommandRepository,
 )
 

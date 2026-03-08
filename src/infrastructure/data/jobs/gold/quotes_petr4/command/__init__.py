@@ -1,4 +1,6 @@
-from .quotes_petr4_command_repository import (  # noqa: D104
+"""Command package for PETR4 Gold layer writes."""
+
+from .quotes_petr4_command_repository import (
     QuotesPetr4GoldCommandRepository,
 )
 
