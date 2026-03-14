@@ -5,7 +5,6 @@ to the Silver layer of the data lake in Parquet format.
 """
 
 import logging
-from pathlib import Path
 
 from pandas import DataFrame
 
@@ -21,11 +20,11 @@ class QuotesPetr4SilverCommandRepository:
     to Parquet files in the Silver layer with proper partitioning.
     """
 
-    def __init__(self, path_file_silver: Path, df: DataFrame) -> None:
+    def __init__(self, path_file_silver: str, df: DataFrame) -> None:
         """Initialize Silver writer with target path and DataFrame.
 
         Args:
-            path_file_silver: Destination file path in Silver layer.
+            path_file_silver: Destination file str path in Silver layer.
             df: PySpark DataFrame with validated data to persist.
         """
         self.path_file_silver = path_file_silver

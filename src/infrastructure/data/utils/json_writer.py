@@ -32,7 +32,7 @@ class JsonWriter(WriterRepository):
         """
         self.spark = spark
 
-    def write(self, data_json: Any, path_file: Path) -> None:
+    def write(self, data_json: Any, path_file: str | Path) -> None:
         """Write data to local file system in JSON format.
 
         Performs atomic write operation using temporary file and rename to ensure
@@ -46,6 +46,13 @@ class JsonWriter(WriterRepository):
             ValueError: If data is empty or None.
             IOError: If file write operation fails.
         """
+        if isinstance(path_file, str) and path_file.startswith("s3://"):
+            self.write_to_s3(data_json, path_file)
+            return
+
+        if isinstance(path_file, str):
+            path_file = Path(path_file)
+
         if data_json is None or (
             isinstance(data_json, (list, dict)) and len(data_json) == 0
         ):

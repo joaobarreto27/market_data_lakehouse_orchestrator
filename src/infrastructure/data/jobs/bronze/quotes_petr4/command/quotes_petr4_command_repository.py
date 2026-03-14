@@ -5,7 +5,6 @@ to the Bronze layer of the data lake.
 """
 
 import logging
-from pathlib import Path
 from typing import Any
 
 from .....utils import JsonWriter
@@ -20,7 +19,7 @@ class QuotesPetr4BronzeCommandRepository:
     with proper error handling and logging.
     """
 
-    def __init__(self, data_json: Any, path_file: Path) -> None:
+    def __init__(self, data_json: Any, path_file: str) -> None:
         """Initialize Bronze writer with data and target path.
 
         Args:

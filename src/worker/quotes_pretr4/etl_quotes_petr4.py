@@ -10,7 +10,10 @@ with comprehensive logging for monitoring and troubleshooting.
 """
 
 import logging
+import os
 from typing import Any
+
+from dotenv import load_dotenv
 
 from infrastructure import (
     BronzeEnum,
@@ -41,12 +44,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def process_bronze() -> Any:
+def process_bronze(environment: str, spark: Any) -> Any:
     """Extract raw PETR4 stock data from external API and persist to Bronze layer.
 
     Fetches daily closing price data from the BRAPI API for PETR4 stock ticker
     and writes the raw JSON response to the Bronze layer with date-based
     partitioning for data lake organization.
+
+    Args:
+        environment: Target environment used to resolve the storage path
+            (e.g., 'dev' or 'prd').
+        spark: Active Spark session used in the pipeline execution context.
 
     Returns:
         dict: Raw JSON data structure from the API response containing stock quotes.
@@ -69,7 +77,7 @@ def process_bronze() -> Any:
         bronze_repository.QuotesPetr4BronzeCommandRepository(
             data_json=data_json_raw,
             path_file=LayerPathResolver(
-                layer=LayerEnum.bronze.name, table=table_name
+                layer=LayerEnum.bronze.name, table=table_name, environment=environment
             ).resolver_layer(source_system=source_system),
         ).writer_bronze()
 
@@ -81,7 +89,7 @@ def process_bronze() -> Any:
         raise e
 
 
-def process_silver(data_json_raw: Any, spark: Any) -> Any:
+def process_silver(data_json_raw: Any, spark: Any, environment: str) -> Any:
     """Transform and validate Bronze layer data, then persist to Silver layer.
 
     Reads raw Bronze layer data, applies schema validation and data transformations,
@@ -91,6 +99,8 @@ def process_silver(data_json_raw: Any, spark: Any) -> Any:
     Args:
         data_json_raw: Raw JSON data dictionary from Bronze layer extraction.
         spark: Active PySpark SparkSession for distributed data processing.
+        environment: Target environment used to resolve the storage path
+            (e.g., 'dev' or 'prd').
 
     Returns:
         dict: Validated and transformed data structure ready for analytics.
@@ -118,7 +128,7 @@ def process_silver(data_json_raw: Any, spark: Any) -> Any:
         logger.info("[SILVER_WRITE] Persisting transformed data to Silver layer")
         silver_repository.QuotesPetr4SilverCommandRepository(
             path_file_silver=LayerPathResolver(
-                layer=LayerEnum.silver.name, table=table_name
+                layer=LayerEnum.silver.name, table=table_name, environment=environment
             ).resolver_layer(domain="finance"),
             df=df,
         ).write_silver()
@@ -188,22 +198,31 @@ def main() -> None:
         Exception: If any pipeline stage fails, exception bubbles up for
                   Airflow DAG failure handling and alerting.
     """
-    logger.info("[ETL_START] Initiating PETR4 daily ETL pipeline execution")
+    load_dotenv()
+    environment = os.getenv("ENVIRONMENT", "dev")
+    logger.info(
+        f"""[ETL_START] Initiating PETR4 daily ETL pipeline execution in
+        {environment} environment"""
+    )
 
     try:
         logger.info("[ETL_SETUP] Initializing Spark session and database connection")
-        spark = SparkSessionManager(sgbd_name=SgbdEnum.postgresql.name)
+        sgbd_name = (
+            SgbdEnum.sqlite.name if environment == "dev" else SgbdEnum.postgresql.name
+        )
+        spark = SparkSessionManager(sgbd_name=sgbd_name)
 
         connection = ConnectionDatabase(
-            environment="prd",
+            environment=environment,
             db_name=DatabaseEnum.market_data_lakehouse_orchestrator.name,
+            sgbd_name=sgbd_name,
         )
         connection.connect_with_retry()
         logger.info("[ETL_SETUP] Database connection established")
 
         logger.info("[ETL_EXECUTE] Executing pipeline stages: Bronze -> Silver -> Gold")
-        data_json_raw = process_bronze()
-        process_silver(data_json_raw, spark)
+        data_json_raw = process_bronze(environment, spark)
+        process_silver(data_json_raw, spark, environment)
         process_gold(spark=spark, connection=connection)
 
         logger.info("[ETL_COMPLETE] PETR4 daily ETL pipeline completed successfully")

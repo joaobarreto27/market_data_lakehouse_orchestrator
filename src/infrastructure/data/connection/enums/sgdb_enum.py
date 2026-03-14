@@ -9,3 +9,4 @@ class SgbdEnum(Enum):
     postgresql = 1
     mysql = 2
     sqlserver = 3
+    sqlite = 4
