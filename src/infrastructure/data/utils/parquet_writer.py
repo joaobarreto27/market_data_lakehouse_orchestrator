@@ -32,7 +32,7 @@ class ParquetWriter(WriterRepository):
         """
         self.spark = spark
 
-    def write(self, df: DataFrame, path_file: Path) -> None:
+    def write(self, df: DataFrame, path_file: str | Path) -> None:
         """Write DataFrame to local file system in Parquet format.
 
         Performs atomic write operation using temporary file and rename to ensure
@@ -46,6 +46,13 @@ class ParquetWriter(WriterRepository):
             ValueError: If DataFrame is empty.
             IOError: If file write operation fails.
         """
+        if isinstance(path_file, str) and path_file.startswith("s3://"):
+            self.write_to_s3(df, path_file)
+            return
+
+        if isinstance(path_file, str):
+            path_file = Path(path_file)
+
         if df.rdd.isEmpty():
             msg = f"Cannot write empty DataFrame to {path_file}"
             logger.error(msg)

@@ -5,7 +5,6 @@ using a shared Spark session.
 """
 
 import logging
-from pathlib import Path
 
 from pyspark.sql import DataFrame, SparkSession
 
@@ -24,7 +23,7 @@ class PySparkDataReader:
         Args:
             spark (SparkSession): active Spark session to use for reads.
         """
-        self.spark = spark
+        self.spark: SparkSession = spark
 
     def read_from_jdbc(
         self, query_loader: SqlQueryLoader, db_connection: ConnectionDatabase
@@ -56,7 +55,7 @@ class PySparkDataReader:
         )
         return df
 
-    def read_from_path_local(self, path_file: Path) -> DataFrame:
+    def read_from_path_local(self, path_file: str) -> DataFrame:
         """Read a parquet file from a local filesystem path.
 
         Args:
@@ -65,7 +64,7 @@ class PySparkDataReader:
         Returns:
             DataFrame: loaded dataset.
         """
-        df = self.spark.read.parquet(path_file.as_posix())  # type: ignore
+        df = self.spark.read.parquet(path_file)  # type: ignore
         return df
 
     def read_from_s3_parquet(self, s3_path: str) -> DataFrame:
