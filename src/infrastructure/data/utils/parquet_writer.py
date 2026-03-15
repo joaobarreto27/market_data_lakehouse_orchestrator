@@ -7,8 +7,9 @@ with support for both local file systems and S3 cloud storage.
 import logging
 import shutil
 from pathlib import Path
+from typing import Any
 
-from pandas import DataFrame
+from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import SparkSession
 
 from ..repository import WriterRepository
@@ -32,7 +33,7 @@ class ParquetWriter(WriterRepository):
         """
         self.spark = spark
 
-    def write(self, df: DataFrame, path_file: str | Path) -> None:
+    def write(self, df: SparkDataFrame, path_file: str | Path) -> None:
         """Write DataFrame to local file system in Parquet format.
 
         Performs atomic write operation using temporary file and rename to ensure
@@ -83,21 +84,42 @@ class ParquetWriter(WriterRepository):
             logger.exception(f"Unexpected error while writing parquet to {path_file}")
             raise e
 
-    def write_to_s3(self, df: DataFrame, s3_path: str) -> None:
-        """Write DataFrame to S3 Parquet using PySpark."""
+    def write_to_s3(self, df: Any, s3_path: str) -> None:
+        """Write data to S3 Parquet format using PySpark.
+
+        This method handles both raw data collections and existing PySpark DataFrames,
+        ensuring efficient persistence to S3 with overwrite mode.
+
+        Args:
+            df (Any): The data to be written. Can be a PySpark DataFrame
+                or a collection compatible with spark.createDataFrame.
+            s3_path (str): The full S3A path (e.g., 's3a://bucket/path').
+
+        Raises:
+            ValueError: If SparkSession is missing or if the DataFrame is empty.
+            Exception: If the write operation to S3 fails.
+        """
         if self.spark is None:
             msg = "SparkSession required for S3 operations"
             logger.error(msg)
             raise ValueError(msg)
-        if df.rdd.isEmpty():
-            msg = f"Cannot write empty DataFrame to S3 {s3_path}"
-            logger.error(msg)
-            raise ValueError(msg)
 
         try:
-            spark_df = self.spark.createDataFrame(df)
+            if isinstance(df, SparkDataFrame):
+                spark_df = df
+            else:
+                logger.info("Converting raw data to PySpark DataFrame")
+                spark_df = self.spark.createDataFrame(df)
+
+            if spark_df.rdd.isEmpty():
+                msg = f"Cannot write empty DataFrame to S3: {s3_path}"
+                logger.warning(msg)
+                raise ValueError(msg)
+
+            logger.info(f"Starting Parquet write to S3: {s3_path}")
             spark_df.write.parquet(s3_path, mode="overwrite")
-            logger.info(f"Parquet file written to S3: {s3_path}")
+            logger.info(f"Successfully written Parquet file to S3: {s3_path}")
+
         except Exception as e:
-            logger.exception(f"Failed to write parquet to S3 {s3_path}")
+            logger.exception(f"CRITICAL: Failed to write parquet to S3 at {s3_path}")
             raise e

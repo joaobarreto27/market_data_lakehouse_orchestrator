@@ -26,7 +26,7 @@ class QuotesPetr4GoldQueryRepository:
         Returns:
             PySpark DataFrame with the loaded data.
         """
-        df = PySparkDataReader(spark=spark_session).read_from_path_local(
-            path_file=path_file
+        df = PySparkDataReader(spark=spark_session).read_from_s3_parquet(
+            s3_path=path_file
         )
         return df

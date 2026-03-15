@@ -34,6 +34,7 @@ class LayerPathResolver:
 
     def resolver_layer(
         self,
+        storage: Optional[str] = None,
         source_system: Optional[str] = None,
         domain: Optional[str] = None,
         date_interval: Optional[date] = None,
@@ -43,6 +44,7 @@ class LayerPathResolver:
         Routes to bronze or silver path resolution based on the configured layer.
 
         Args:
+            storage: The storage name (required for bronze layer).
             source_system: The source system name (required for bronze layer).
             domain: The business domain (required for silver layer).
             date_interval: The date for partitioning. Defaults to today's date.
@@ -55,26 +57,34 @@ class LayerPathResolver:
         """
         if self.layer == "bronze":
             path = self._get_bronze_path(
-                source_system=source_system, date_interval=date_interval
+                storage=storage,
+                source_system=source_system,
+                date_interval=date_interval,
             )
         elif self.layer == "silver":
-            path = self._get_silver_path(domain=domain, date_interval=date_interval)
+            path = self._get_silver_path(
+                storage=storage, domain=domain, date_interval=date_interval
+            )
         else:
             msg = f"Unsupported layer: {self.layer}"
             logger.error(msg)
             raise ValueError(msg)
 
         if self.environment == "prd":
-            return f"s3://market-data-lakehouse-bucket/{path}"
+            return f"s3a://{storage}/{path}"
         else:
             return path
 
     def _get_bronze_path(
-        self, source_system: Optional[str], date_interval: Optional[date]
+        self,
+        storage: Optional[str],
+        source_system: Optional[str],
+        date_interval: Optional[date],
     ) -> str:
         """Generate the path for bronze layer data.
 
         Args:
+            storage: The storage name.
             source_system: The source system name.
             date_interval: The date for partitioning.
 
@@ -102,11 +112,15 @@ class LayerPathResolver:
             raise ValueError(msg)
 
     def _get_silver_path(
-        self, domain: Optional[str], date_interval: Optional[date]
+        self,
+        storage: Optional[str],
+        domain: Optional[str],
+        date_interval: Optional[date],
     ) -> str:
         """Generate the path for silver layer data.
 
         Args:
+            storage: The storage name.
             domain: The business domain name.
             date_interval: The date for partitioning.
 
