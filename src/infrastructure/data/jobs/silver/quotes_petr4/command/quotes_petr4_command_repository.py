@@ -5,6 +5,7 @@ to the Silver layer of the data lake in Parquet format.
 """
 
 import logging
+from typing import Any
 
 from pandas import DataFrame
 
@@ -30,7 +31,7 @@ class QuotesPetr4SilverCommandRepository:
         self.path_file_silver = path_file_silver
         self.df = df
 
-    def write_silver(self) -> None:
+    def write_silver(self, spark: Any) -> None:
         """Write validated Silver layer data to Parquet file.
 
         Persists the validated DataFrame to the Silver layer using
@@ -41,7 +42,9 @@ class QuotesPetr4SilverCommandRepository:
         """
         try:
             logger.info(f"Starting Silver layer write to: {self.path_file_silver}")
-            ParquetWriter().write(df=self.df, path_file=self.path_file_silver)
+            ParquetWriter(spark=spark).write_to_s3(
+                df=self.df, s3_path=self.path_file_silver
+            )
             logger.info(f"Silver data written to {self.path_file_silver}")
         except Exception as e:
             logger.exception(f"Failed to write Silver data to {self.path_file_silver}")

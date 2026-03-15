@@ -1,6 +1,7 @@
 """Module for managing PySpark SparkSession."""
 
 import logging
+import os
 from typing import Any, Dict, Optional
 
 from pyspark.sql import SparkSession
@@ -62,16 +63,27 @@ class SparkSessionManager:
         packages.append("org.apache.hadoop:hadoop-aws:3.3.4")
         builder = builder.config("spark.jars.packages", ",".join(packages))
 
-        builder = builder.config(
-            "fs.s3a.aws.credentials.provider",
-            "com.amazonaws.auth.DefaultAWSCredentialsProviderChain",
-        )
+        builder = builder.config("spark.driver.host", "localhost")
 
         if configs:
             for key, value in configs.items():
                 builder = builder.config(key, value)
 
         self._spark = builder.getOrCreate()
+
+        profile_name = os.getenv("AWS_PROFILE", "default")
+
+        sc = self._spark.sparkContext  # type: ignore
+        hadoop_conf = sc._jsc.hadoopConfiguration()  # type: ignore
+
+        hadoop_conf.set(
+            "fs.s3a.aws.credentials.provider",
+            "com.amazonaws.auth.profile.ProfileCredentialsProvider,com.amazonaws.auth.DefaultAWSCredentialsProviderChain",
+        )
+        hadoop_conf.set("fs.s3a.aws.profile", profile_name)
+
+        hadoop_conf.set("fs.s3a.endpoint", "s3.amazonaws.com")
+        hadoop_conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
 
     def __getattr__(self, item: str) -> Any:
         """Delegate attribute access to SparkSession.

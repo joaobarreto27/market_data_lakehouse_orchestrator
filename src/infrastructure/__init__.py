@@ -22,7 +22,7 @@ from .data import (
     gold_repository_modules,
     silver_repository_modules,
 )
-from .models import LayerEnum, SourceSystemEnum
+from .models import LayerEnum, SourceSystemEnum, StorageEnum
 
 __all__: list[str] = [
     "BronzeEnum",
@@ -40,6 +40,7 @@ __all__: list[str] = [
     "SgbdEnum",
     "SparkSessionManager",
     "SourceSystemEnum",
+    "StorageEnum",
     "silver_repository_modules",
     "gold_repository_modules",
 ]
