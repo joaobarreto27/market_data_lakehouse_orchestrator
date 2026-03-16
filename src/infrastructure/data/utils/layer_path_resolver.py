@@ -57,27 +57,26 @@ class LayerPathResolver:
         """
         if self.layer == "bronze":
             path = self._get_bronze_path(
-                storage=storage,
                 source_system=source_system,
                 date_interval=date_interval,
             )
         elif self.layer == "silver":
-            path = self._get_silver_path(
-                storage=storage, domain=domain, date_interval=date_interval
-            )
+            path = self._get_silver_path(domain=domain, date_interval=date_interval)
         else:
             msg = f"Unsupported layer: {self.layer}"
             logger.error(msg)
             raise ValueError(msg)
 
         if self.environment == "prd":
+            if not storage:
+                msg = "Storage (bucket) must be provided in prd environment"
+                logger.error(msg)
+                raise ValueError(msg)
             return f"s3a://{storage}/{path}"
-        else:
-            return path
+        return path
 
     def _get_bronze_path(
         self,
-        storage: Optional[str],
         source_system: Optional[str],
         date_interval: Optional[date],
     ) -> str:
@@ -113,7 +112,6 @@ class LayerPathResolver:
 
     def _get_silver_path(
         self,
-        storage: Optional[str],
         domain: Optional[str],
         date_interval: Optional[date],
     ) -> str:
