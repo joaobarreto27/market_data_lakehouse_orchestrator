@@ -1,5 +1,6 @@
 """Module for managing data loading into databases using PySpark."""
 
+import logging
 from typing import Literal
 
 import pandas as pd
@@ -8,11 +9,17 @@ from pyspark.sql import DataFrame, SparkSession
 from ..repository import WriterRepository
 from .connect_database import ConnectionDatabase
 
+logger = logging.getLogger(__name__)
+
 
 class DatabaseWriter(WriterRepository):
     """Manages data loading into databases with Spark."""
 
-    def __init__(self, spark: SparkSession, connect: ConnectionDatabase) -> None:
+    def __init__(  # noqa: D417
+        self,
+        spark: SparkSession,
+        connect: ConnectionDatabase,
+    ) -> None:
         """Initialize the connection for loading data into the database.
 
         Args:
@@ -34,41 +41,50 @@ class DatabaseWriter(WriterRepository):
         Raises:
             ValueError: If DBMS is not supported or JDBC URL not initialized.
         """
-        if self.connect.sgbd_name == "sqlite":
-            if self.connect.sqlite_conn is None:
-                self.connect.initialize_jdbc()
+        try:
+            if self.connect.sgbd_name == "sqlite":
+                if self.connect.sqlite_conn is None:
+                    self.connect.initialize_jdbc()
 
-            df_pandas: pd.DataFrame = df.toPandas()
+                df_pandas: pd.DataFrame = df.toPandas()
 
-            PandasIfExists = Literal["fail", "replace", "append"]
+                PandasIfExists = Literal["fail", "replace", "append"]
 
-            pandas_mode: PandasIfExists  # pyright: ignore[reportInvalidTypeForm]
+                pandas_mode: PandasIfExists  # pyright: ignore[reportInvalidTypeForm]
 
-            if mode == "overwrite":
-                pandas_mode = "replace"
-            elif mode == "ignore":
-                pandas_mode = "fail"
+                if mode == "overwrite":
+                    pandas_mode = "replace"
+                elif mode == "ignore":
+                    pandas_mode = "fail"
+                else:
+                    pandas_mode = "append"
+
+                df_pandas.to_sql(
+                    name=table_name,
+                    con=self.connect.sqlite_conn,
+                    if_exists=pandas_mode,
+                    index=False,
+                )
+                logger.info(f"DataFrame written to SQLite table: {table_name}")
+
+            elif self.connect.sgbd_name == "postgresql":
+                jdbc_url, properties = self.connect.initialize_jdbc()
+                if jdbc_url is None:
+                    msg = "PostgreSQL JDBC URL not initialized"
+                    logger.error(msg)
+                    raise ValueError(msg)
+                df.write.jdbc(
+                    url=jdbc_url, table=table_name, mode=mode, properties=properties
+                )
+                logger.info(f"DataFrame written to PostgreSQL table: {table_name}")
+
             else:
-                pandas_mode = "append"
-
-            df_pandas.to_sql(
-                name=table_name,
-                con=self.connect.sqlite_conn,
-                if_exists=pandas_mode,
-                index=False,
-            )
-            print(f"DataFrame successfully written to '{table_name}' table in SQLite.")
-
-        elif self.connect.sgbd_name == "postgresql":
-            jdbc_url, properties = self.connect.initialize_jdbc()
-            if jdbc_url is None:
-                raise ValueError("JDBC URL was not initialized.")
-            df.write.jdbc(
-                url=jdbc_url, table=table_name, mode=mode, properties=properties
-            )
-            print(
-                f"DataFrame successfully written to '{table_name}' table in PostgreSQL."
-            )
-
-        else:
-            raise ValueError(f"DBMS '{self.connect.sgbd_name}' is not supported.")
+                msg = f"Unsupported DBMS: {self.connect.sgbd_name}"
+                logger.error(msg)
+                raise ValueError(msg)
+        except (ValueError, AttributeError) as e:
+            logger.exception(f"Failed to write to database table {table_name}")
+            raise e
+        except Exception as e:
+            logger.exception(f"Unexpected error writing to table {table_name}")
+            raise e

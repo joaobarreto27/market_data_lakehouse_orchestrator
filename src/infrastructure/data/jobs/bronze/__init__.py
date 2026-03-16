@@ -1,5 +1,18 @@
-# ruff: noqa: D104
-from .enum import BronzeEnum, QuotesEnum
-from .quote_petr4 import QuotesPetr4QueryRepository
+"""Bronze layer job package providing extraction utilities.
 
-__all__ = ["QuotesPetr4QueryRepository", "BronzeEnum", "QuotesEnum"]
+Contains enums and PETR4-specific query/command repositories for
+bronze layer data ingestion.
+"""
+
+from .enums import BronzeEnum, QuotesEnum
+from .quotes_petr4 import (
+    QuotesPetr4BronzeCommandRepository,
+    QuotesPetr4BronzeQueryRepository,
+)
+
+__all__: list[str] = [
+    "QuotesPetr4BronzeQueryRepository",
+    "BronzeEnum",
+    "QuotesEnum",
+    "QuotesPetr4BronzeCommandRepository",
+]

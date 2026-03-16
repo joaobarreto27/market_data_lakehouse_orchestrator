@@ -1,3 +1,5 @@
-from .http_base_enum import HttpBaseEnum  # noqa: D104
+"""HTTP base configuration utilities and enums."""
 
-__all__ = ["HttpBaseEnum"]
+from .enums import HttpBaseEnum
+
+__all__: list[str] = ["HttpBaseEnum"]

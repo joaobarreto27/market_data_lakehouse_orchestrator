@@ -1,4 +1,9 @@
-from .database_enum import DatabaseEnum  # noqa: D104
-from .sgdb_enum import SgbdEnum
+"""Database connection enums package.
+
+Provides enumerations for database types and SGBDs used
+throughout the infrastructure layer.
+"""
+
+from .enums import DatabaseEnum, SgbdEnum
 
 __all__: list[str] = ["DatabaseEnum", "SgbdEnum"]

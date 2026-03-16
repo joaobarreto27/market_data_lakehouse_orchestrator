@@ -1,5 +1,6 @@
 """Module for managing JDBC connections with PySpark to PostgreSQL."""
 
+import logging
 import sqlite3
 import time
 from pathlib import Path
@@ -9,6 +10,8 @@ from dotenv import dotenv_values
 from pyspark.sql import SparkSession
 
 from ..repository import DatabaseRepository
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionDatabase(DatabaseRepository):
@@ -63,9 +66,9 @@ class ConnectionDatabase(DatabaseRepository):
             )
 
             if not self.path_file.is_file():
-                raise FileNotFoundError(
-                    f"Configuration file not found at: {self.path_file}"
-                )
+                msg = f"Configuration file not found at: {self.path_file}"
+                logger.error(msg)
+                raise FileNotFoundError(msg)
 
             env_vars = dotenv_values(dotenv_path=self.path_file)
 
@@ -77,6 +80,7 @@ class ConnectionDatabase(DatabaseRepository):
                 "password": password,
                 "driver": "org.postgresql.Driver",
             }
+            logger.info(f"JDBC properties generated successfully for {self.sgbd_name}.")
             return self.jdbc_url, self.properties
 
         elif self.sgbd_name == "sqlite":
@@ -84,11 +88,13 @@ class ConnectionDatabase(DatabaseRepository):
             db_folder.mkdir(parents=True, exist_ok=True)
             db_path = db_folder / f"{self.db_name}.db"
             self.sqlite_conn = sqlite3.connect(db_path)
-            print(f"Connected to local SQLite: {db_path}")
+            logger.info(f"Connected to local SQLite: {db_path}")
             return None, None
 
         else:
-            raise ValueError(f"DBMS '{self.sgbd_name}' is not supported.")
+            msg = f"DBMS '{self.sgbd_name}' is not supported."
+            logger.error(msg)
+            raise ValueError(msg)
 
     def connect_with_retry(
         self, max_retries: int = 5, wait_seconds: int = 5
@@ -106,6 +112,10 @@ class ConnectionDatabase(DatabaseRepository):
         Raises:
             Exception: If connection fails after max retries.
         """
+        logger.info(
+            f"Attempting connection to {self.sgbd_name} (Max retries: {max_retries})"
+        )
+
         for attempt in range(1, max_retries + 1):
             try:
                 if self.sgbd_name == "sqlite":
@@ -124,12 +134,21 @@ class ConnectionDatabase(DatabaseRepository):
                     properties=self.properties,
                 )
                 df.collect()
-                print("Successfully connected!")
+                logger.info(
+                    f"Successfully connected to {self.sgbd_name} on attempt {attempt}"
+                )
                 return self.jdbc_url, self.properties
 
             except Exception as e:
-                print(f"[Attempt {attempt}/{max_retries}] Connection failed: {e}")
                 if attempt == max_retries:
+                    logger.exception(
+                        f"""Failed to connect {e} to {self.sgbd_name}
+                        after {max_retries} attempts"""
+                    )
                     raise
+
+                logger.warning(
+                    f"Connection attempt {attempt} failed. Retrying in {wait_seconds}s"
+                )
                 time.sleep(wait_seconds)
         raise RuntimeError("Should not reach this point")

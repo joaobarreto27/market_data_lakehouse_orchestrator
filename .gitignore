@@ -173,6 +173,10 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+src/infrastructure/data/connection/postgresql/.env.prd_market_data_lakehouse_orchestrator
+bronze/brapi
+silver/finance
+
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 # Generated using ignr.py - github.com/Antrikshy/ignr.py

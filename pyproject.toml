@@ -17,6 +17,7 @@ dependencies = [
   "pandas>=2.3.3,<3.0.0",
   "python-dotenv>=1.2.1,<2.0.0",
   "pyarrow (>=23.0.0,<24.0.0)",
+  "setuptools (>=82.0.1,<83.0.0)",
 ]
 
 [project.optional-dependencies]

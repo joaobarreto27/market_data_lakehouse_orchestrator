@@ -1,4 +1,10 @@
-# ruff: noqa: D104
+"""Infrastructure core package exposing enums and utilities.
+
+This package aggregates data layer enums, repository modules, and
+utility classes to provide a unified interface for infrastructure
+components used throughout the orchestrator.
+"""
+
 from .data import (
     BronzeEnum,
     ConnectAPI,
@@ -13,8 +19,10 @@ from .data import (
     SgbdEnum,
     SparkSessionManager,
     bronze_repository_modules,
+    gold_repository_modules,
+    silver_repository_modules,
 )
-from .models import SourceSystemEnum
+from .models import LayerEnum, SourceSystemEnum, StorageEnum
 
 __all__: list[str] = [
     "BronzeEnum",
@@ -26,9 +34,13 @@ __all__: list[str] = [
     "EnvManager",
     "HttpBaseEnum",
     "JsonWriter",
+    "LayerEnum",
     "ParquetWriter",
     "QuotesEnum",
     "SgbdEnum",
     "SparkSessionManager",
     "SourceSystemEnum",
+    "StorageEnum",
+    "silver_repository_modules",
+    "gold_repository_modules",
 ]
