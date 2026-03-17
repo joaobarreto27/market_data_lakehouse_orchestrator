@@ -11,7 +11,7 @@ with comprehensive logging for monitoring and troubleshooting.
 
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 from dotenv import load_dotenv
 
@@ -42,10 +42,27 @@ from infrastructure.data.utils import LayerPathResolver
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 
-def process_bronze(environment: str, spark: Any, storage: Optional[str]) -> Any:
+def _get_spark_instance(environment: str) -> SparkSessionManager:
+    """Helper interno para garantir a sessão Spark correta por ambiente."""
+    sgbd_name = (
+        SgbdEnum.sqlite.name if environment == "dev" else SgbdEnum.postgresql.name
+    )
+    return SparkSessionManager(sgbd_name=sgbd_name)
+
+
+def _get_environment() -> str:
+    load_dotenv()
+    return os.getenv("ENVIRONMENT", "dev")
+
+
+def _get_storage() -> str:
+    return os.getenv("STORAGE_BUCKET", StorageEnum.market_lakehouse_dev.value)
+
+
+def process_bronze() -> Any:
     """Extract raw PETR4 stock data from external API and persist to Bronze layer.
 
     Fetches daily closing price data from the BRAPI API for PETR4 stock ticker
@@ -55,7 +72,6 @@ def process_bronze(environment: str, spark: Any, storage: Optional[str]) -> Any:
     Args:
         environment: Target environment used to resolve the storage path
             (e.g., 'dev' or 'prd').
-        spark: Active Spark session used in the pipeline execution context.
         storage: The storage name.
 
     Returns:
@@ -69,19 +85,22 @@ def process_bronze(environment: str, spark: Any, storage: Optional[str]) -> Any:
         logger.info("[BRONZE_INIT] Starting Bronze layer data extraction for PETR4")
         table_name = BronzeEnum.quotes_petr4.name
         source_system = SourceSystemEnum.brapi.name
+        environment: str = _get_environment()
+        storage: str = _get_storage()
+        spark: SparkSessionManager = _get_spark_instance(environment)
 
         logger.info(f"[BRONZE_QUERY] Querying API endpoint for {table_name} quotes")
+
         data_json_raw = bronze_repository.QuotesPetr4BronzeQueryRepository(
             base_url=HttpBaseEnum.api_endpoint.value
         ).get_daily_closing(quotes=QuotesEnum.PETR4.value)
 
-        logger.info("[BRONZE_WRITE] Persisting raw data to Bronze layer")
         bronze_repository.QuotesPetr4BronzeCommandRepository(
             data_json=data_json_raw,
             path_file=LayerPathResolver(
                 layer=LayerEnum.bronze.name, table=table_name, environment=environment
             ).resolver_layer(storage=storage, source_system=source_system),
-        ).writer_bronze()
+        ).writer_bronze(spark)
 
         logger.info("[BRONZE_SUCCESS] Bronze layer extraction completed successfully")
         return data_json_raw
@@ -91,9 +110,7 @@ def process_bronze(environment: str, spark: Any, storage: Optional[str]) -> Any:
         raise e
 
 
-def process_silver(
-    data_json_raw: Any, spark: Any, environment: str, storage: Optional[str]
-) -> Any:
+def process_silver(data_json_raw: Any) -> Any:
     """Transform and validate Bronze layer data, then persist to Silver layer.
 
     Reads raw Bronze layer data, applies schema validation and data transformations,
@@ -102,7 +119,6 @@ def process_silver(
 
     Args:
         data_json_raw: Raw JSON data dictionary from Bronze layer extraction.
-        spark: Active PySpark SparkSession for distributed data processing.
         environment: Target environment used to resolve the storage path
             (e.g., 'dev' or 'prd').
         storage: The storage name.
@@ -117,12 +133,17 @@ def process_silver(
     try:
         logger.info("[SILVER_INIT] Starting Silver layer transformation for PETR4")
         table_name = BronzeEnum.quotes_petr4.name
+        environment = _get_environment()
+        storage = _get_storage()
 
         logger.info("[SILVER_VALIDATE] Validating data schema")
+        spark = _get_spark_instance(environment)
+        table_name = BronzeEnum.quotes_petr4.name
+
         data = silver_repository.QuotesPetr4SilverQueryRepository(
             data_json=data_json_raw,
             spark_session=spark,
-        ).validate_schema()  # type: ignore
+        ).validate_schema()
 
         logger.info(
             f"""[SILVER_TRANSFORM] Creating DataFrame with
@@ -148,9 +169,7 @@ def process_silver(
         raise e
 
 
-def process_gold(
-    spark: Any, connection: ConnectionDatabase, storage: Optional[str], environment: str
-) -> None:
+def process_gold() -> None:
     """Load transformed Silver layer data to Gold layer for analytics.
 
     Reads validated Silver layer data, applies aggregations and business logic,
@@ -158,8 +177,6 @@ def process_gold(
     for reporting and business intelligence consumption.
 
     Args:
-        spark: Active PySpark SparkSession for distributed data processing.
-        connection: Database connection manager for Gold layer persistence.
         storage: The storage name.
         environment: Target environment used to resolve the storage path
             (e.g., 'dev' or 'prd').
@@ -171,6 +188,20 @@ def process_gold(
         logger.info("[GOLD_INIT] Starting Gold layer preparation for PETR4")
 
         logger.info("[GOLD_READ] Reading Silver layer data for aggregation")
+        environment = _get_environment()
+        storage = _get_storage()
+        spark = _get_spark_instance(environment)
+
+        sgbd_name = (
+            SgbdEnum.sqlite.name if environment == "dev" else SgbdEnum.postgresql.name
+        )
+        connection = ConnectionDatabase(
+            environment=environment,
+            db_name=DatabaseEnum.market_data_lakehouse_orchestrator.name,
+            sgbd_name=sgbd_name,
+        )
+        connection.connect_with_retry()
+
         df = gold_repository.QuotesPetr4GoldQueryRepository().read_silver_parquet(
             spark_session=spark,
             path_file=LayerPathResolver(
@@ -197,55 +228,14 @@ def process_gold(
         raise e
 
 
-def main() -> None:
-    """Execute the complete daily ETL pipeline for PETR4 stock quotes.
-
-    Orchestrates the full Extract-Transform-Load process across all data lake
-    layers (Bronze -> Silver -> Gold), including API data extraction, schema
-    validation, transformation, and analytics database loading.
-
-    This function is designed to be executed daily via Apache Airflow scheduler.
-
-    Raises:
-        Exception: If any pipeline stage fails, exception bubbles up for
-                  Airflow DAG failure handling and alerting.
-    """
-    load_dotenv()
-    environment = os.getenv("ENVIRONMENT", "dev")
-    logger.info(
-        f"""[ETL_START] Initiating PETR4 daily ETL pipeline execution in
-        {environment} environment"""
-    )
-
-    try:
-        logger.info("[ETL_SETUP] Initializing Spark session and database connection")
-        sgbd_name = (
-            SgbdEnum.sqlite.name if environment == "dev" else SgbdEnum.postgresql.name
-        )
-        storage = StorageEnum.market_lakehouse_dev.value
-        spark = SparkSessionManager(sgbd_name=sgbd_name)
-
-        connection = ConnectionDatabase(
-            environment=environment,
-            db_name=DatabaseEnum.market_data_lakehouse_orchestrator.name,
-            sgbd_name=sgbd_name,
-        )
-        connection.connect_with_retry()
-        logger.info("[ETL_SETUP] Database connection established")
-
-        logger.info("[ETL_EXECUTE] Executing pipeline stages: Bronze -> Silver -> Gold")
-        data_json_raw = process_bronze(environment, spark, storage=storage)
-        process_silver(data_json_raw, spark, environment, storage=storage)
-        process_gold(
-            spark=spark, connection=connection, storage=storage, environment=environment
-        )
-
-        logger.info("[ETL_COMPLETE] PETR4 daily ETL pipeline completed successfully")
-
-    except Exception as e:
-        logger.exception("[ETL_FAILED] PETR4 daily ETL pipeline execution failed")
-        raise e
-
-
 if __name__ == "__main__":
-    main()
+    load_dotenv()
+
+    logger.info("🚀 Manual Execution Detected")
+    try:
+        raw_data = process_bronze()
+        process_silver(raw_data)
+        process_gold()
+        logger.info("✅ ETL Pipeline completed successfully!")
+    except Exception as e:
+        logger.error(f"❌ Error during manual execution: {e}")

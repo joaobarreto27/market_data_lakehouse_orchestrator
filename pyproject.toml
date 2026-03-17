@@ -55,7 +55,9 @@ quote-style = "double"
 [tool.mypy]
 files = ["src"]
 mypy_path = ["src"]
+exclude = ["dags"]
 explicit_package_bases = true
+namespace_packages = true
 
 [tool.taskipy.tasks]
 format = "ruff format ."

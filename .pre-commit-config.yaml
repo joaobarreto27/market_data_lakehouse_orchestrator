@@ -15,11 +15,13 @@ repos:
   # 2️⃣ Mypy (agnóstico ao ambiente)
   - repo: local
     hooks:
-      - id: mypy
-        name: mypy (system env)
-        entry: mypy
-        language: system
-        types: [python]
+    - id: mypy
+      name: mypy (system env)
+      entry: mypy
+      language: system
+      args: ["src"]
+      pass_filenames: false
+      types: [python]
 
   # 3️⃣ Ruff (lint)
   - repo: https://github.com/charliermarsh/ruff-pre-commit
