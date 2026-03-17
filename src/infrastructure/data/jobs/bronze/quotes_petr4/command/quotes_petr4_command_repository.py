@@ -30,7 +30,7 @@ class QuotesPetr4BronzeCommandRepository:
         self.path_file = path_file
         logger.debug(f"BronzeCommandRepository initialized for path: {path_file}")
 
-    def writer_bronze(self) -> None:
+    def writer_bronze(self, spark) -> None:
         """Write raw Bronze layer data to JSON file.
 
         Persists the raw JSON data from API to the Bronze layer using
@@ -41,7 +41,9 @@ class QuotesPetr4BronzeCommandRepository:
         """
         try:
             logger.info(f"Starting Bronze layer write to: {self.path_file}")
-            JsonWriter().write(data_json=self.data_json, path_file=self.path_file)
+            JsonWriter(spark).write_to_s3(
+                data_json=self.data_json, s3_path=self.path_file
+            )
             logger.info(f"Bronze data written to {self.path_file}")
         except Exception as e:
             logger.exception(f"Failed to write Bronze data to {self.path_file}")
