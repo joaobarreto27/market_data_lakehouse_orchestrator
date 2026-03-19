@@ -3,7 +3,7 @@ name = "market-data-lakehouse-orchestrator"
 version = "0.1.0"
 description = ""
 readme = "README.md"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.11,<3.13"
 
 authors = [
   { name = "joaobarreto27", email = "joao.vito1951@gmail.com" }
@@ -18,6 +18,7 @@ dependencies = [
   "python-dotenv>=1.2.1,<2.0.0",
   "pyarrow (>=23.0.0,<24.0.0)",
   "setuptools (>=82.0.1,<83.0.0)",
+  "tornado (>=6.5.5,<7.0.0)",
 ]
 
 [project.optional-dependencies]
@@ -33,14 +34,15 @@ dev = [
 ]
 
 [tool.setuptools]
-package-dir = { "" = "src" }
+package-dir = { "" = "dags/etl/src" }
 
 [tool.setuptools.packages.find]
-where = ["src"]
-include = ["worker", "worker.*", "infrastructure", "infrastructure.*"]
+where = ["dags/etl/src"]
+include = ["worker*", "infrastructure*"]
 
 [tool.ruff]
 line-length = 88
+exclude = ["dags/__init__.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "D"]
@@ -53,27 +55,26 @@ convention = "google"
 quote-style = "double"
 
 [tool.mypy]
-files = ["src"]
-mypy_path = ["src"]
-exclude = ["dags"]
+files = ["dags/etl/src"]
+mypy_path = ["dags/etl/src"]
 explicit_package_bases = true
 namespace_packages = true
+ignore_missing_imports = true
 
 [tool.taskipy.tasks]
 format = "ruff format ."
 fix = "ruff check . --fix"
-test = "pytest tests/ -v --cov=src --cov-report=term-missing"
 commit = "pre-commit run --all-files"
-typecheck = "mypy src"
-security = "bandit -r src -x tests -s B101"
+typecheck = "mypy dags/etl/src"
+security = "bandit -r dags/etl/src -s B101"
 audit = "pip-audit"
 ci = """
-ruff format .
-ruff check . --fix
-mypy src
-bandit -r src -x tests -s B101
-pip-audit
-pre-commit run --all-files
+task format
+task fix
+task typecheck
+task security
+task audit
+task commit
 """
 
 [build-system]
