@@ -63,7 +63,7 @@ jobs:
 
       # 8️⃣ Mypy
       - name: Mypy type checking
-        run: mypy src
+        run: mypy dags/etl/src
 
       # 9️⃣ Bandit
       - name: Bandit security scan

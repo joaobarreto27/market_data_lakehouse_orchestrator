@@ -1,7 +1,7 @@
-from datetime import datetime, timedelta  # noqa: D100
+from datetime import timedelta  # noqa: D100
 
 from airflow.decorators import dag, task  # type:ignore  # noqa: F401
-
+from pendulum import datetime as pend_datetime  # type: ignore
 from src.worker.quotes_pretr4 import (  # noqa: F401
     process_bronze,
     process_gold,
@@ -19,9 +19,10 @@ default_args = {
 @dag(
     dag_id="spark_market_quotes_petr4_dag",
     description="ETL for PETR4 stock quotes using Spark and Lakehouse architecture",
-    schedule_interval="*/5 * * * *",
-    start_date=datetime(2026, 3, 1),
+    schedule="*/5 * * * *",
+    start_date=pend_datetime(2026, 3, 18, tz="America/Sao_Paulo"),
     catchup=False,
+    max_active_runs=10,
     default_args=default_args,
     tags=["finance", "spark", "lakehouse"],
 )

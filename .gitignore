@@ -173,9 +173,14 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
-src/infrastructure/data/connection/postgresql/.env.prd_market_data_lakehouse_orchestrator
+dags/etl/src/infrastructure/data/connection/postgresql/.env.prd_market_data_lakehouse_orchestrator
 bronze/brapi
 silver/finance
+airflow-webserver.pid
+airflow.cfg
+webserver_config.py
+dags/etl/src/infrastructure/data/connection/sqlite/market_data_lakehouse_orchestrator.db
+logs/scheduler/latest
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 

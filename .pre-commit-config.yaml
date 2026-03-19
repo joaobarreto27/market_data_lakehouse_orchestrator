@@ -19,7 +19,7 @@ repos:
       name: mypy (system env)
       entry: mypy
       language: system
-      args: ["src"]
+      args: ["dags/etl/src"]
       pass_filenames: false
       types: [python]
 
