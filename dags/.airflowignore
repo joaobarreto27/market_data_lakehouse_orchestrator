@@ -1,0 +1,6 @@
+# Ignore Python cache
+__pycache__
+
+# Ignore infrastructure source, keep only the DAG files
+etl/src/infrastructure/.*
+etl/src/worker/.*/__init__\.py
