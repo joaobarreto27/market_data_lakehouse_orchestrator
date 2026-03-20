@@ -2,8 +2,9 @@ requests>=2.32.5,<3.0.0
 pyspark==3.5.4
 pydantic>=2.12.5,<3.0.0
 pandera>=0.28.1,<0.29.0
-pandas>=2.3.3,<3.0.0
 python-dotenv>=1.2.1,<2.0.0
 pyarrow>=23.0.0,<24.0.0
-setuptools>=82.0.1,<83.0.0
 tornado>=6.5.5,<7.0.0
+pandas>=1.2.5,<2.2
+setuptools<67.0.0
+pyspark==3.5.4
