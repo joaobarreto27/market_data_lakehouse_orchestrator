@@ -1,0 +1,77 @@
+name: Deploy Airflow to EC2
+
+on:
+  push:
+    branches:
+      - master
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: 🔐 Configurar Credenciais da AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔍 Verificar Status da EC2
+        id: check-status
+        run: |
+          # Consulta o estado atual da instância (ex: running, stopped)
+          STATE=$(aws ec2 describe-instances \
+            --instance-ids ${{ secrets.EC2_INSTANCE_ID }} \
+            --query 'Reservations[0].Instances[0].State.Name' \
+            --output text)
+
+          echo "Status atual da instância: $STATE"
+          # Salva o estado em uma variável de ambiente para os próximos passos
+          echo "INSTANCE_STATE=$STATE" >> $GITHUB_ENV
+
+      - name: 🚀 Ligar Instância (Apenas se estiver desligada)
+        if: env.INSTANCE_STATE != 'running'
+        run: |
+          aws ec2 start-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+          echo "Aguardando a instância inicializar..."
+          aws ec2 wait instance-running --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+
+      - name: 🔎 Obter IP Público Dinâmico
+        id: get-ip
+        run: |
+          PUBLIC_IP=$(aws ec2 describe-instances \
+            --instance-ids ${{ secrets.EC2_INSTANCE_ID }} \
+            --query 'Reservations[0].Instances[0].PublicIpAddress' \
+            --output text)
+          echo "IP capturado: $PUBLIC_IP"
+          echo "EC2_PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
+
+      - name: ⏳ Aguardar boot do SSH (Apenas se a esteira ligou a máquina)
+        if: env.INSTANCE_STATE != 'running'
+        run: sleep 30
+
+      - name: ⚙️ Executar Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.EC2_PUBLIC_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/${{ secrets.SSH_USER }}/market_data_lakehouse
+            git pull origin master
+            docker compose down
+            docker compose build --no-cache
+            docker compose up -d
+
+      - name: 🛑 Desligar Instância (Apenas se a esteira ligou a máquina)
+        if: always() && env.INSTANCE_STATE != 'running'
+        run: |
+          aws ec2 stop-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+          echo "A máquina foi desligada pois estava parada antes do deploy."
