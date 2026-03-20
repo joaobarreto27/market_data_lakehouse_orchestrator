@@ -1,15 +1,17 @@
 name: Deploy Airflow to EC2
 
 on:
-  push:
+  pull_request:
     branches:
       - master
+    types: [closed]
 
 env:
   AWS_REGION: us-east-1
 
 jobs:
   deploy:
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     steps:
@@ -26,14 +28,11 @@ jobs:
       - name: 🔍 Verificar Status da EC2
         id: check-status
         run: |
-          # Consulta o estado atual da instância (ex: running, stopped)
           STATE=$(aws ec2 describe-instances \
             --instance-ids ${{ secrets.EC2_INSTANCE_ID }} \
             --query 'Reservations[0].Instances[0].State.Name' \
             --output text)
-
           echo "Status atual da instância: $STATE"
-          # Salva o estado em uma variável de ambiente para os próximos passos
           echo "INSTANCE_STATE=$STATE" >> $GITHUB_ENV
 
       - name: 🚀 Ligar Instância (Apenas se estiver desligada)
@@ -53,7 +52,7 @@ jobs:
           echo "IP capturado: $PUBLIC_IP"
           echo "EC2_PUBLIC_IP=$PUBLIC_IP" >> $GITHUB_ENV
 
-      - name: ⏳ Aguardar boot do SSH (Apenas se a esteira ligou a máquina)
+      - name: ⏳ Aguardar boot do SSH
         if: env.INSTANCE_STATE != 'running'
         run: sleep 30
 
@@ -64,9 +63,24 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/${{ secrets.SSH_USER }}/market_data_lakehouse
-            git pull origin master
-            docker compose down
+            # Garante que o GitHub está nos hosts conhecidos
+            mkdir -p ~/.ssh
+            ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
+
+            PROJECT_DIR="/home/${{ secrets.SSH_USER }}/market_data_lakehouse"
+
+            if [ ! -d "$PROJECT_DIR" ]; then
+              echo "Pasta não encontrada. Clonando repositório..."
+              git clone git@github.com:${{ github.repository }}.git $PROJECT_DIR
+              cd $PROJECT_DIR
+            else
+              echo "Pasta encontrada. Atualizando código..."
+              cd $PROJECT_DIR
+              git pull origin master
+            fi
+
+            echo "Subindo containers no Docker..."
+            docker compose down --remove-orphans
             docker compose build --no-cache
             docker compose up -d
 
@@ -74,4 +88,4 @@ jobs:
         if: always() && env.INSTANCE_STATE != 'running'
         run: |
           aws ec2 stop-instances --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
-          echo "A máquina foi desligada pois estava parada antes do deploy."
+          echo "A máquina foi desligada automaticamente."
