@@ -3,7 +3,7 @@ name: Deploy Airflow to EC2
 on:
   pull_request:
     branches:
-      - master
+      - main
     types: [closed]
 
 env:
