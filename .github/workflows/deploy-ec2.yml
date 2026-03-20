@@ -68,19 +68,17 @@ jobs:
             PROJECT_DIR="/home/${{ secrets.SSH_USER }}/market_data_lakehouse"
 
             if [ ! -d "$PROJECT_DIR/.git" ]; then
-              echo "Pasta não encontrada ou vazia. Clonando repositório..."
+              echo "Pasta não encontrada ou corrompida. Clonando..."
               sudo rm -rf $PROJECT_DIR
-              # Pulo do gato: Usando HTTPS com o GITHUB_TOKEN temporário
-              git clone https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git $PROJECT_DIR
-              cd $PROJECT_DIR
-            else
-              echo "Pasta encontrada. Atualizando código..."
-              cd $PROJECT_DIR
-              git remote set-url origin https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-              git pull origin master
+              git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git $PROJECT_DIR
             fi
 
-            echo "Subindo containers no Docker..."
+            cd $PROJECT_DIR
+            echo "Atualizando código da branch main..."
+            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
+            git pull origin main || git pull origin master
+
+            echo "Subindo containers..."
             docker compose down --remove-orphans
             docker compose build --no-cache
             docker compose up -d
