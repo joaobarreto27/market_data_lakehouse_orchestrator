@@ -13,6 +13,8 @@ jobs:
   deploy:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: 📥 Checkout do Código
@@ -63,19 +65,18 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # Garante que o GitHub está nos hosts conhecidos
-            mkdir -p ~/.ssh
-            ssh-keyscan -t ed25519 github.com >> ~/.ssh/known_hosts 2>/dev/null
-
             PROJECT_DIR="/home/${{ secrets.SSH_USER }}/market_data_lakehouse"
 
-            if [ ! -d "$PROJECT_DIR" ]; then
-              echo "Pasta não encontrada. Clonando repositório..."
-              git clone git@github.com:${{ github.repository }}.git $PROJECT_DIR
+            if [ ! -d "$PROJECT_DIR/.git" ]; then
+              echo "Pasta não encontrada ou vazia. Clonando repositório..."
+              sudo rm -rf $PROJECT_DIR
+              # Pulo do gato: Usando HTTPS com o GITHUB_TOKEN temporário
+              git clone https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git $PROJECT_DIR
               cd $PROJECT_DIR
             else
               echo "Pasta encontrada. Atualizando código..."
               cd $PROJECT_DIR
+              git remote set-url origin https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
               git pull origin master
             fi
 
