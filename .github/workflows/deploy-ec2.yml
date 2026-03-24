@@ -68,9 +68,12 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             PROJECT_DIR="/home/${{ secrets.SSH_USER }}/market_data_lakehouse"
+            USER_ID=$(id -u)
+
+            echo "=== Iniciando deploy do Airflow ==="
 
             if [ ! -d "$PROJECT_DIR/.git" ]; then
-              echo "Pasta não encontrada ou corrompida. Clonando..."
+              echo "Clonando repositório pela primeira vez..."
               sudo rm -rf $PROJECT_DIR
               git clone https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git $PROJECT_DIR
             fi
@@ -82,28 +85,39 @@ jobs:
             git reset --hard origin/main
             git clean -fd
 
-            echo "Configurando permissões do Airflow para o usuário do host..."
-            echo -e "AIRFLOW_UID=$(id -u)" > .env
-            mkdir -p ./dags ./logs ./plugins ./config
-
-            echo "Ajustando posse dos arquivos legados..."
-            sudo chown -R $USER:0 $PROJECT_DIR
-            sudo chmod -R g+rwx $PROJECT_DIR
-
-            echo "Gerando arquivo .env..."
-            cat <<EOT > .env
-            AIRFLOW_UID=$(id -u)
+            cat > .env << EOF
+            AIRFLOW_UID=${USER_ID}
+            AIRFLOW_GID=0
             AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
             AWS_REGION=${{ env.AWS_REGION }}
-            EOT
+
+            echo "AIRFLOW_UID configurado como ${USER_ID}"
+
+            mkdir -p ./dags ./logs ./plugins ./config
+            sudo chown -R ${USER_ID}:0 $PROJECT_DIR
+            sudo chmod -R g+rwx $PROJECT_DIR
+            chmod -R 777 logs
 
             docker image prune -f
 
-            echo "Subindo containers..."
+            echo "Parando containers antigos..."
             docker compose down --remove-orphans
+
+            echo "Executando airflow-init (pode demorar 30-90s)..."
             docker compose up airflow-init
+
+            echo "Subindo os demais serviços..."
             docker compose up -d
+
+            echo "=== Deploy finalizado! Verificando status ==="
+            docker compose ps
+            docker compose logs --tail=50 airflow-init
+
+            if ! docker compose logs airflow-init | grep -q "Admin user airflow created"; then
+              echo "ERRO: airflow-init falhou!"
+              exit 1
+            fi
 
       - name: 🛑 Desligar Instância (Apenas se a esteira ligou a máquina)
         if: always() && env.INSTANCE_STATE != 'running'
