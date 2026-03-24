@@ -52,7 +52,7 @@ class QuotesPetr4SilverQueryRepository:
                 validated_data.append(stock.model_dump())
             except ValidationError as e:
                 logger.exception(
-                    f"Validation error for ticker symbol " f"'{item.get('symbol')}'"
+                    f"Validation error for ticker symbol '{item.get('symbol')}'"
                 )
                 raise e
         return data_json
