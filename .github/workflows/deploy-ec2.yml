@@ -78,7 +78,8 @@ jobs:
             cd $PROJECT_DIR
             echo "Atualizando código da branch main..."
             git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-            git pull origin main || git pull origin master
+            git fetch origin main
+            git reset --hard origin/main
 
             docker image prune -f
 
