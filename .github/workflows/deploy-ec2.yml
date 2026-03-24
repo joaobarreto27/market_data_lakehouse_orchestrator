@@ -86,6 +86,17 @@ jobs:
             echo -e "AIRFLOW_UID=$(id -u)" > .env
             mkdir -p ./dags ./logs ./plugins ./config
 
+            echo "Ajustando posse dos arquivos legados..."
+            sudo chown -R $USER:$USER $PROJECT_DIR
+
+            echo "Gerando arquivo .env..."
+            cat <<EOT > .env
+            AIRFLOW_UID=$(id -u)
+            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_REGION=${{ env.AWS_REGION }}
+            EOT
+
             docker image prune -f
 
             echo "Subindo containers..."
