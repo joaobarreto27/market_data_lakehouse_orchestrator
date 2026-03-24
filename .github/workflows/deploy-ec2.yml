@@ -91,17 +91,17 @@ jobs:
             find . -type f -name "*.pyc" -delete 2>/dev/null || true
 
             cat > .env << EOF
-            AIRFLOW_UID=${USER_ID}
+            AIRFLOW_UID=50000
             AIRFLOW_GID=0
             AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
             AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
             AWS_REGION=${AWS_REGION}
             EOF
 
-            echo "AIRFLOW_UID configurado como ${USER_ID}"
+            echo "AIRFLOW_UID configurado como 50000 (padrão Airflow)"
 
             mkdir -p ./dags ./logs ./plugins ./config
-            sudo chown -R ${USER_ID}:0 $PROJECT_DIR 2>/dev/null || true
+            sudo chown -R 50000:0 $PROJECT_DIR 2>/dev/null || true
             sudo chmod -R g+rwx $PROJECT_DIR 2>/dev/null || true
             chmod -R 777 logs 2>/dev/null || true
 
