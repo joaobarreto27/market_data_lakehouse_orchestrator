@@ -80,6 +80,11 @@ jobs:
             git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
             git fetch origin main
             git reset --hard origin/main
+            git clean -fd
+
+            echo "Configurando permissões do Airflow para o usuário do host..."
+            echo -e "AIRFLOW_UID=$(id -u)" > .env
+            mkdir -p ./dags ./logs ./plugins ./config
 
             docker image prune -f
 
