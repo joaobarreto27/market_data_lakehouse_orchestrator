@@ -45,7 +45,17 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 def _get_spark_instance(environment: str) -> SparkSessionManager:
-    """Helper interno para garantir a sessão Spark correta por ambiente."""
+    """Get the appropriate Spark session manager for the given environment.
+
+    Selects between SQLite (development) and PostgreSQL (production) based on
+    the environment parameter.
+
+    Args:
+        environment (str): Environment type ('dev' or 'prd').
+
+    Returns:
+        SparkSessionManager: Configured Spark session manager for the environment.
+    """
     sgbd_name = (
         SgbdEnum.sqlite.name if environment == "dev" else SgbdEnum.postgresql.name
     )

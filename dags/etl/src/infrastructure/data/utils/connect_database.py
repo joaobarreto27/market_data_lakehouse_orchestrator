@@ -61,11 +61,11 @@ class ConnectionDatabase(DatabaseRepository):
             try:
                 resolver = SecretResolver(config_path)
                 self.aws_secret_name = resolver.resolve(sgbd_name, db_name)
-                logger.info(f"Secret resolvida dinamicamente: {self.aws_secret_name}")
+                logger.info(f"Secret name resolved dynamically: {self.aws_secret_name}")
             except (FileNotFoundError, KeyError) as e:
                 logger.warning(
-                    f"Não foi possível resolver secret pelo JSON: {e}. "
-                    "O sistema tentará usar .env local se necessário."
+                    f"Failed to resolve secret from JSON configuration: {e}. "
+                    "System will attempt to use local .env file if available."
                 )
                 self.aws_secret_name = None
 
@@ -73,7 +73,7 @@ class ConnectionDatabase(DatabaseRepository):
         """Fetch and parse credentials from AWS Secrets Manager."""
         if not self.aws_secret_name:
             raise ValueError(
-                "AWS Secret Name não definido. Verifique o JSON de config."
+                "AWS Secret Name is not defined. Please verify the configuration JSON."
             )
 
         session = boto3.session.Session()  # type: ignore
@@ -85,7 +85,10 @@ class ConnectionDatabase(DatabaseRepository):
             response = client.get_secret_value(SecretId=self.aws_secret_name)
             return json.loads(response["SecretString"])
         except Exception as e:
-            logger.error(f"Erro ao buscar secret {self.aws_secret_name}: {e}")
+            logger.error(
+                f"""Error retrieving secret '{self.aws_secret_name}'
+                from AWS Secrets Manager: {e}"""
+            )
             raise e
 
     def initialize_jdbc(self) -> Tuple[Optional[str], Optional[Dict[str, str]]]:
