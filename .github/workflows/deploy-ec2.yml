@@ -85,12 +85,13 @@ jobs:
             git reset --hard origin/main
             git clean -fd
 
-            cat > .env << EOF
+            cat > .env << 'EOF'
             AIRFLOW_UID=${USER_ID}
             AIRFLOW_GID=0
-            AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_REGION=${{ env.AWS_REGION }}
+            AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+            AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+            AWS_REGION=${AWS_REGION}
+            EOF
 
             echo "AIRFLOW_UID configurado como ${USER_ID}"
 
