@@ -50,7 +50,6 @@ x-airflow-common: &airflow-common
     args:
       PIP_TIMEOUT: 1000
       PIP_RETRIES: 5
-  image: airflow-study:v.1
   env_file:
     - .env
   environment:
