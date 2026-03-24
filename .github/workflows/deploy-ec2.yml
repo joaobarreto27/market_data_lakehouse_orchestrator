@@ -101,11 +101,7 @@ jobs:
             docker image prune -f
 
             echo "Subindo containers..."
-
             docker compose down --remove-orphans
-            docker compose pull
-            docker compose build
-
             docker compose up airflow-init
             docker compose up -d
 
