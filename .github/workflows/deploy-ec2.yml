@@ -66,6 +66,7 @@ jobs:
           host: ${{ env.EC2_PUBLIC_IP }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION
           script: |
             PROJECT_DIR="/home/${{ secrets.SSH_USER }}/market_data_lakehouse"
             USER_ID=$(id -u)
@@ -85,7 +86,7 @@ jobs:
             git reset --hard origin/main
             git clean -fd
 
-            cat > .env << 'EOF'
+            cat > .env << EOF
             AIRFLOW_UID=${USER_ID}
             AIRFLOW_GID=0
             AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
