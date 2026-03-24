@@ -19,7 +19,7 @@ default_args = {
 @dag(
     dag_id="spark_market_quotes_petr4_dag",
     description="ETL for PETR4 stock quotes using Spark and Lakehouse architecture",
-    schedule="*/5 * * * *",
+    schedule="0 20 * * 1-6",
     start_date=pend_datetime(2026, 3, 18, tz="America/Sao_Paulo"),
     catchup=False,
     max_active_runs=10,
