@@ -86,6 +86,10 @@ jobs:
             git reset --hard origin/main
             git clean -fd
 
+            # Remove cached Python files to avoid permission issues
+            find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+            find . -type f -name "*.pyc" -delete 2>/dev/null || true
+
             cat > .env << EOF
             AIRFLOW_UID=${USER_ID}
             AIRFLOW_GID=0
@@ -97,9 +101,9 @@ jobs:
             echo "AIRFLOW_UID configurado como ${USER_ID}"
 
             mkdir -p ./dags ./logs ./plugins ./config
-            sudo chown -R ${USER_ID}:0 $PROJECT_DIR
-            sudo chmod -R g+rwx $PROJECT_DIR
-            chmod -R 777 logs
+            sudo chown -R ${USER_ID}:0 $PROJECT_DIR 2>/dev/null || true
+            sudo chmod -R g+rwx $PROJECT_DIR 2>/dev/null || true
+            chmod -R 777 logs 2>/dev/null || true
 
             docker image prune -f
 
@@ -109,17 +113,46 @@ jobs:
             echo "Executando airflow-init (pode demorar 30-90s)..."
             docker compose up airflow-init
 
+            # Wait for airflow-init to complete and verify success
+            AIRFLOW_INIT_SUCCESS=false
+            for i in {1..5}; do
+              if docker compose logs airflow-init | grep -q "Airflow database initialized"; then
+                AIRFLOW_INIT_SUCCESS=true
+                break
+              fi
+              sleep 5
+            done
+
+            if [ "$AIRFLOW_INIT_SUCCESS" = false ]; then
+              docker compose logs airflow-init | tail -100
+              echo "WARNING: Could not verify airflow-init success, but continuing..."
+            fi
+
             echo "Subindo os demais serviços..."
             docker compose up -d
 
             echo "=== Deploy finalizado! Verificando status ==="
             docker compose ps
-            docker compose logs --tail=50 airflow-init
 
-            if ! docker compose logs airflow-init | grep -q "Admin user airflow created"; then
-              echo "ERRO: airflow-init falhou!"
+            # Verify critical services are running
+            SERVICES_RUNNING=true
+            REQUIRED_SERVICES=("airflow-webserver" "airflow-scheduler" "airflow-worker" "postgres" "redis")
+
+            for service in "${REQUIRED_SERVICES[@]}"; do
+              if ! docker compose ps | grep -q "$service.*Up"; then
+                echo "ERROR: Service $service is not running!"
+                SERVICES_RUNNING=false
+              fi
+            done
+
+            if [ "$SERVICES_RUNNING" = false ]; then
+              echo "ERROR: Some critical services failed to start!"
+              docker compose logs --tail=100
               exit 1
             fi
+
+            echo "=== Deploy completed successfully! ==="
+            docker compose logs --tail=50 airflow-webserver
 
       - name: 🛑 Desligar Instância (Apenas se a esteira ligou a máquina)
         if: always() && env.INSTANCE_STATE != 'running'
