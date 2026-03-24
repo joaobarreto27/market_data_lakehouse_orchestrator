@@ -1,4 +1,9 @@
-"""Validação para o schema de eventos de cotação de PETR4."""
+"""Schema validation for PETR4 stock quote events.
+
+This module defines Pydantic validation schemas for market quote data
+from the PETR4 stock ticker, including OHLC prices, volume, and related
+market metrics.
+"""
 
 from datetime import datetime
 from typing import Optional
@@ -7,7 +12,11 @@ from pydantic import BaseModel, PositiveFloat, PositiveInt
 
 
 class QuotesPetr4ValidatorSchema(BaseModel):
-    """Schema de validação para os eventos de cotação de PETR4."""
+    """Validation schema for PETR4 stock quote events.
+
+    Ensures data quality and type correctness for market quote information
+    including prices, volumes, ranges, and corporate metrics.
+    """
 
     symbol: str
     shortName: str
