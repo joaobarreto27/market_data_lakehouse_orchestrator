@@ -68,7 +68,7 @@ def _get_environment() -> str:
 
 
 def _get_storage() -> str:
-    return os.getenv("STORAGE_BUCKET", StorageEnum.market_lakehouse_dev.value)
+    return os.getenv("STORAGE_BUCKET", StorageEnum.market_lakehouse_prd.value)
 
 
 def process_bronze() -> Any:
@@ -101,7 +101,9 @@ def process_bronze() -> Any:
         logger.info(f"[BRONZE_QUERY] Querying API endpoint for {table_name} quotes")
 
         data_json_raw = bronze_repository.QuotesPetr4BronzeQueryRepository(
-            base_url=HttpBaseEnum.api_endpoint.value
+            base_url=HttpBaseEnum.api_endpoint.value,
+            environment=environment,
+            db_name=DatabaseEnum.market_data_lakehouse_orchestrator.name,
         ).get_daily_closing(quotes=QuotesEnum.PETR4.value)
 
         bronze_repository.QuotesPetr4BronzeCommandRepository(
@@ -142,11 +144,11 @@ def process_silver(data_json_raw: Any) -> Any:
     try:
         logger.info("[SILVER_INIT] Starting Silver layer transformation for PETR4")
         table_name = BronzeEnum.quotes_petr4.name
-        environment = _get_environment()
-        storage = _get_storage()
+        environment: str = _get_environment()
+        storage: str = _get_storage()
 
         logger.info("[SILVER_VALIDATE] Validating data schema")
-        spark = _get_spark_instance(environment)
+        spark: SparkSessionManager = _get_spark_instance(environment)
         table_name = BronzeEnum.quotes_petr4.name
 
         data = silver_repository.QuotesPetr4SilverQueryRepository(

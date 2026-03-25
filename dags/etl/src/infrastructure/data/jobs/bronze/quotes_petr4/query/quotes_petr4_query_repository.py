@@ -19,15 +19,19 @@ class QuotesPetr4BronzeQueryRepository:
     price data for PETR4, including token management and error handling.
     """
 
-    def __init__(self, base_url: str) -> None:
+    def __init__(self, base_url: str, db_name: str, environment: str) -> None:
         """Initialize API query with base URL.
 
         Args:
-            base_url: Base URL of the API endpoint.
+            base_url (str): Base URL of the API endpoint.
+            db_name (stl): The db name
+            environment (str): Environment type ('dev' or 'prd').
         """
         self.data_json: dict[str, Any] = {}
         self.data: dict[str, Any] = {}
-        self.base_url = base_url
+        self.base_url: str = base_url
+        self.db_name: str = db_name
+        self.environment: str = environment
 
     def get_token(self) -> str:
         """Retrieve API authentication token from environment configuration.
@@ -41,7 +45,9 @@ class QuotesPetr4BronzeQueryRepository:
             RuntimeError: If API token is not configured in environment.
         """
         try:
-            api_token: Optional[str] = EnvManager().get_token()
+            api_token: Optional[str] = EnvManager(
+                environment=self.environment, project_name=self.db_name
+            ).get_token()
             if not api_token:
                 msg = "API token not found in environment"
                 logger.error(msg)
