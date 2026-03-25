@@ -85,11 +85,9 @@ x-airflow-common: &airflow-common
     AIRFLOW__WEBSERVER__RATE_LIMIT_STORAGE_URI: 'redis://redis:6379/0'
     AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE: America/Sao_Paulo
     AIRFLOW__CORE__DEFAULT_TIMEZONE: America/Sao_Paulo
-    # AWS Configuration
     AWS_REGION: ${AWS_REGION:-us-east-1}
     AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
     AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-    AWS_PROFILE: ${AWS_PROFILE:-market_data_lakehouse_orchestrator}
   volumes:
   - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
   - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
