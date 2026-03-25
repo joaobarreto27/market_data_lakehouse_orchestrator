@@ -1,0 +1,11 @@
+{
+  "parameters": {
+    "api": {
+      "market_data_lakehouse_orchestrator": {
+        "prefix": "conn",
+        "environment": "prd",
+        "alias": "api_key"
+      }
+    }
+  }
+}
