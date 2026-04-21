@@ -19,6 +19,11 @@ Um **orquestrador de data lake** abrangente que automatiza o ciclo completo ETL/
 
 ---
 
+## 🔄 Pipeline em Ação
+
+![Portfólio](./img/airflow_project.png)
+
+
 ## 🏛️ Visão Geral da Arquitetura
 
 ### Diagrama da Arquitetura do Sistema
